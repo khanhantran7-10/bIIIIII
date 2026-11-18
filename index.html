@@ -1,0 +1,2687 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống BI & Quản Trị Kinh Doanh Số 5 Bước (Zero-Data & Schema-Agnostic)</title>
+    
+    <!-- CDNs: SheetJS (xlsx), PapaParse, Chart.js & Google Fonts -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* EDITORIAL LUXURY IVORY & WARM CHAMPAGNE PALETTE */
+            --bg-page: #f7f5f0;
+            --bg-sidebar: #fbfaf7;
+            --bg-navbar: #ffffff;
+            --bg-card: #ffffff;
+            --bg-input: #ffffff;
+            --border-card: #ebe5dc;
+            --border-subtle: #d5cec2;
+            --border-dashed: #d5cdc0;
+            --text-primary: #0F172A;
+            --text-secondary: #334155;
+            --text-muted: #475569;
+            --text-dim: #64748b;
+            
+            --brand-blue: #2563eb;
+            --brand-blue-hover: #1d4ed8;
+            --brand-blue-bg: #e9f0fd;
+            --brand-blue-border: #dbeafe;
+            
+            --brand-gold: #b45309;
+            --brand-gold-bg: #fbf5ea;
+            --brand-gold-border: #eedec3;
+            --brand-gold-text: #92400e;
+            
+            --accent-rose: #dc2626;
+            --accent-emerald: #10b981;
+            --sidebar-width: 240px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body, button, input, select, textarea {
+            font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            width: 100%;
+            max-width: 100%;
+            min-height: 100vh;
+            scroll-behavior: smooth;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        code, pre, .formula-code, .font-mono {
+            font-family: 'JetBrains Mono', monospace !important;
+        }
+
+        .kpi-card, .kpi-value, .kpi-sub, table.bi-table td, table.bi-table th, .health-card-value, .stats-diff-card .num-primary, .num-col, .tabular-nums, .badge-num {
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 1. CHUẨN LAYOUT: HEADER STICKY + SIDEBAR CỐ ĐỊNH 240PX + MAIN CONTENT CUỘN ĐỘC LẬP */
+        header.navbar {
+            position: sticky; top: 0; z-index: 50;
+            height: 64px; width: 100%; max-width: 100%;
+            background: var(--bg-navbar); border-bottom: 1px solid var(--border-card);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; gap: 14px; flex-wrap: wrap; box-sizing: border-box;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        }
+        .nav-left { display: flex; align-items: center; gap: 14px; min-width: 0; flex-wrap: wrap; }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; white-space: nowrap; }
+        .logo-icon {
+            width: 32px; height: 32px; background: #2f5888; color: #ffffff;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(47, 88, 136, 0.25);
+        }
+        .logo-title-editorial {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 20px; font-weight: 700; color: #1e293b; letter-spacing: -0.2px;
+        }
+        .pipeline-tag {
+            background: var(--brand-gold-bg); color: var(--brand-gold-text); font-size: 11px; font-weight: 600;
+            padding: 4px 14px; border-radius: 20px; border: 1px solid var(--brand-gold-border); white-space: nowrap;
+        }
+        .nav-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-width: 0; }
+        .data-status-badge {
+            display: inline-flex; align-items: center; gap: 8px; background: #fdfdfc;
+            border: 1px solid #e7e2d8; color: #475569;
+            padding: 5px 14px; border-radius: 20px; font-size: 11.5px; font-weight: 600; max-width: 100%;
+        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; flex-shrink: 0; }
+        .status-dot.active { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.5); }
+
+        /* Hard Reset Button - Soft Blush Capsule */
+        .btn-hard-reset {
+            background: #fef2f2; border: 1px solid #fecaca; color: #dc2626;
+            padding: 5px 14px; border-radius: 20px; font-size: 11.5px; font-weight: 600;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; font-family: inherit; white-space: nowrap;
+        }
+        .btn-hard-reset:hover { background: #fee2e2; border-color: #f87171; box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15); }
+
+        /* Khung bên dưới gồm Sidebar trái và Main Content phải */
+        .layout {
+            display: flex;
+            width: 100%;
+            max-width: 100%;
+            align-items: stretch;
+            background: var(--bg-page);
+        }
+        aside.sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            height: calc(100vh - 64px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: sticky;
+            top: 64px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid #ede7dd;
+            padding: 16px 0 24px;
+            z-index: 40;
+        }
+        .sidebar-section-title { font-size: 10px; font-weight: 700; color: #9c8a79; text-transform: uppercase; padding: 14px 20px 8px; letter-spacing: 0.6px; }
+        .nav-links { list-style: none; margin-bottom: 14px; }
+        .nav-links a {
+            display: flex; align-items: center; gap: 10px; padding: 9px 14px; font-size: 12px;
+            font-weight: 500; color: #57534e; text-decoration: none; transition: all 0.2s; border-radius: 10px; margin: 2px 12px; cursor: pointer;
+        }
+        .nav-links a:hover { color: #1e293b; background: rgba(0, 0, 0, 0.03); }
+        .nav-links li.active a { color: #1e3a8a; background: var(--brand-blue-bg); font-weight: 700; border: 1px solid var(--brand-blue-border); }
+        .nav-links li.locked a { opacity: 0.65; cursor: not-allowed; }
+        .nav-links .step-badge {
+            width: 22px; height: 22px; border-radius: 50%; background: #f1ede6; color: #78716c;
+            border: 1px solid #e5dfd5; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .nav-links li.active .step-badge { background: #2563eb; color: #ffffff; border-color: #2563eb; }
+        .nav-links li.completed .step-badge { background: #10b981; color: #ffffff; border-color: #10b981; }
+
+        /* Main Content bắt buộc có flex: 1; min-width: 0; max-width: 100%; height: calc(100vh - 64px); overflow-y: auto; overflow-x: hidden; */
+        main.content {
+            flex: 1;
+            min-width: 0;
+            max-width: 100%;
+            height: calc(100vh - 64px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 24px 32px 60px;
+            box-sizing: border-box;
+            background: var(--bg-page);
+        }
+
+        /* 2. STEPPER PROGRESS BAR (EDITORIAL LUXURY IVORY) */
+        .stepper-container {
+            background: #ffffff; border: 1px solid var(--border-card); border-radius: 16px;
+            padding: 12px 18px; margin-bottom: 22px; width: 100%; max-width: 100%;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02); box-sizing: border-box;
+        }
+        .stepper {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 8px; width: 100%; position: relative;
+        }
+        .step-item {
+            display: flex; align-items: center; gap: 10px; cursor: pointer; z-index: 2;
+            padding: 7px 16px; border-radius: 14px; transition: all 0.2s; min-width: 0;
+            border: 1px solid transparent;
+        }
+        .step-item:hover:not(.locked) { background: #f9f8f5; }
+        .step-item.active {
+            border: 1px solid var(--brand-blue-border); background: var(--brand-blue-bg);
+        }
+        .step-item.locked { opacity: 0.65; cursor: not-allowed; }
+        .step-bubble {
+            width: 26px; height: 26px; border-radius: 50%; background: #f5f2eb; color: #78716c; border: 1px solid #e7e1d7;
+            font-weight: 700; font-size: 11.5px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;
+        }
+        .step-item.active .step-bubble { background: #2563eb; color: #ffffff; border-color: #2563eb; font-weight: 700; }
+        .step-item.completed .step-bubble { background: #10b981; color: white; border-color: #10b981; }
+        .step-text { display: flex; flex-direction: column; min-width: 0; }
+        .step-subtitle { font-size: 9.5px; font-weight: 700; color: #8c8278; text-transform: uppercase; letter-spacing: 0.4px; }
+        .step-item.active .step-subtitle { color: #2563eb; }
+        .step-title { font-size: 12px; font-weight: 600; color: #475569; white-space: nowrap; }
+        .step-item.active .step-title { color: #1e293b; font-weight: 700; }
+        .step-divider { flex: 1; min-width: 10px; max-width: 36px; height: 1px; background: #e7e1d7; margin: 0 4px; }
+        .step-divider.active { background: #93c5fd; }
+
+        /* STEP VIEWS */
+        .step-view { display: none; width: 100%; max-width: 100%; min-width: 0; }
+        .step-view.active { display: block; animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Gatekeeping Checkpoint Box */
+        .checkpoint-box {
+            background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 16px;
+            padding: 22px 24px; margin-top: 22px; width: 100%; max-width: 100%;
+            box-shadow: 0 2px 10px rgba(180, 83, 9, 0.05); box-sizing: border-box; color: #78350f;
+        }
+        .checkpoint-header { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 800; color: #b45309; margin-bottom: 8px; flex-wrap: wrap; }
+        .checkpoint-text { font-size: 13px; color: #78350f; line-height: 1.6; margin-bottom: 14px; }
+        .checkpoint-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; width: 100%; }
+        .gate-input-wrap { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; max-width: 420px; }
+        .gate-input {
+            flex: 1; min-width: 0; padding: 10px 14px; border: 1px solid #fcd34d; border-radius: 8px;
+            font-size: 12.5px; background: #ffffff; color: #1e293b; font-family: inherit; outline: none;
+        }
+        .gate-input:focus { border-color: #b45309; box-shadow: 0 0 0 2px rgba(180, 83, 9, 0.15); }
+
+        /* Panel Box (Editorial Luxury Card) */
+        .panel-box {
+            background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 18px;
+            padding: 28px 32px; margin-bottom: 24px; width: 100%; max-width: 100%; min-width: 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02); box-sizing: border-box;
+        }
+        .panel-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; width: 100%; }
+        .panel-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 24px; font-weight: 700; color: #1e293b; letter-spacing: -0.3px;
+        }
+        .panel-subtitle-italic {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-style: italic; font-size: 14px; color: var(--brand-gold); margin-top: 4px;
+        }
+        .panel-desc {
+            font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 12px 0 20px;
+        }
+
+        /* Empty Clean Slate Banner (Mẫu Trạng Thái Khởi Tạo Trắng Hoàn Toàn) */
+        .empty-slate-box {
+            border: 1px solid var(--border-card); border-radius: 16px; padding: 32px 24px; text-align: center;
+            background: #fdfcf9; color: var(--text-muted); margin-top: 24px; width: 100%; box-sizing: border-box;
+            position: relative;
+        }
+        .empty-slate-sparkle-top {
+            font-size: 22px; color: var(--brand-gold); margin-bottom: 8px;
+        }
+        .empty-slate-box h4 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 6px;
+        }
+        .empty-slate-box p { font-size: 13px; max-width: 680px; margin: 0 auto; line-height: 1.6; color: var(--text-muted); }
+
+        /* Profile Card */
+        .profile-card {
+            background: #fcfbf9; border: 1px solid var(--border-card); border-radius: 12px; padding: 18px 20px; margin-bottom: 16px; width: 100%; box-sizing: border-box;
+        }
+        .profile-item { margin-bottom: 14px; }
+        .profile-label { font-size: 11.5px; font-weight: 800; color: #059669; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .profile-value { font-size: 13.5px; font-weight: 600; color: #1e293b; line-height: 1.5; word-break: break-word; }
+        .profile-questions { list-style: none; padding-left: 0; margin-top: 4px; }
+        .profile-questions li { font-size: 13px; color: #334155; margin-bottom: 4px; padding-left: 18px; position: relative; }
+        .profile-questions li::before { content: "🎯"; position: absolute; left: 0; font-size: 11px; top: 2px; }
+
+        /* Form Inputs */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 18px; width: 100%; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 12px; min-width: 0; }
+        .form-label { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+        .form-input, .form-textarea {
+            padding: 14px 16px; border: 1px solid var(--border-subtle); border-radius: 12px; font-size: 13px;
+            font-family: inherit; outline: none; background: #ffffff; color: #1e293b; line-height: 1.6; width: 100%; max-width: 100%;
+            transition: all 0.2s;
+        }
+        .form-input:focus, .form-textarea:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+
+        /* Upload Dropzone (Đúng theo ảnh: Vòng tròn mũi tên xanh + tags + nút chọn tệp) */
+        .upload-dropzone {
+            border: 1.5px dashed var(--border-dashed); border-radius: 14px; padding: 24px 20px; text-align: center;
+            background: #faf9f6; cursor: pointer; transition: all 0.2s; position: relative; width: 100%; box-sizing: border-box;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 195px;
+        }
+        .upload-dropzone:hover, .upload-dropzone.dragover { border-color: var(--brand-blue); background: #f0f6ff; }
+        .upload-arrow-circle {
+            width: 44px; height: 44px; border-radius: 50%; background: #e0edff; color: #2563eb;
+            display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; margin-bottom: 12px;
+        }
+        .upload-main-text { font-size: 13.5px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+        .upload-sub-text { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+        .ext-tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px; }
+        .ext-tag {
+            background: #f1eee7; color: #64748b; font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600;
+        }
+        .btn-choose-file {
+            background: #ffffff; border: 1px solid #cbd5e1; border-radius: 20px; padding: 6px 18px; font-size: 12px;
+            font-weight: 600; color: #334155; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-choose-file:hover { background: #f8fafc; border-color: #94a3b8; }
+        .file-hidden-input { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+
+        /* Health Check Cards */
+        .health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 18px; width: 100%; }
+        .health-card { background: #ffffff; border: 1px solid var(--border-card); border-radius: 12px; padding: 16px; min-width: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.02); }
+        .health-card-label { font-size: 13px; font-weight: 700; color: #334155; text-transform: uppercase; }
+        .health-card-value { font-size: clamp(1.3rem, 1.8vw, 1.6rem); font-weight: 800; color: #0F172A; margin: 4px 0; }
+        .health-card-desc { font-size: 13px; color: #334155; }
+
+        /* Table Responsive */
+        .table-responsive {
+            width: 100%; max-width: 100%; overflow-x: auto; overflow-y: auto; max-height: 480px;
+            border: 1px solid var(--border-card); border-radius: 10px; display: block; box-sizing: border-box; background: #ffffff;
+        }
+        table.bi-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; line-height: 1.6; }
+        table.bi-table th { background: #f8fafc; padding: 12px 14px; font-size: 13.5px; font-weight: 700; color: #334155; border-bottom: 1px solid var(--border-card); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+        table.bi-table td { padding: 11px 14px; font-size: 14px; line-height: 1.6; border-bottom: 1px solid #f1f5f9; color: #0F172A; white-space: nowrap; }
+        table.bi-table tr:hover td { background: #f8fafc; }
+
+        td.cell-missing { background-color: #fee2e2 !important; color: #991b1b !important; font-weight: 700; border-left: 3px solid #ef4444; }
+        td.cell-format { background-color: #fef3c7 !important; color: #92400e !important; font-weight: 700; border-left: 3px solid #f59e0b; }
+        td.cell-anomaly { background-color: #f3e8ff !important; color: #6b21a8 !important; font-weight: 700; border-left: 3px solid #a855f7; }
+        .cell-badge-err { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 4px; }
+        .cell-missing .cell-badge-err { background: #ef4444; color: #ffffff; }
+        .cell-format .cell-badge-err { background: #f59e0b; color: #ffffff; }
+        .cell-anomaly .cell-badge-err { background: #a855f7; color: #ffffff; }
+
+        /* Cleaning & Mapping Grids */
+        .clean-options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 16px; width: 100%; }
+        .clean-option-card { background: #ffffff; border: 1px solid var(--border-card); border-radius: 12px; padding: 16px; min-width: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.02); }
+        .clean-option-card h4 { font-size: 14px; font-weight: 800; margin-bottom: 8px; color: #0F172A; }
+        .clean-select { width: 100%; max-width: 100%; padding: 9px 12px; border: 1px solid var(--border-subtle); border-radius: 6px; font-size: 13.5px; font-family: inherit; background: #ffffff; color: #0F172A; outline: none; }
+        .clean-checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155; cursor: pointer; margin-top: 6px; }
+
+        .stats-diff-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px; width: 100%; }
+        .stats-diff-card { background: #ffffff; border: 1px solid var(--border-card); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+        .stats-diff-card .num-primary { font-size: 20px; font-weight: 800; color: #059669; }
+        .stats-diff-card .sub-label { font-size: 13px; color: #334155; }
+
+        .mapping-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; width: 100%; }
+        .mapping-item { background: #ffffff; border: 1px solid var(--border-card); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+        .mapping-label { font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 4px; }
+        .mapping-badge { font-size: 10.5px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; flex-shrink: 0; }
+        .badge-metric { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
+        .badge-dim { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .badge-date { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+
+        .col-chip {
+            display: inline-block; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd;
+            padding: 4px 10px; border-radius: 14px; font-size: 13px; font-weight: 700; cursor: pointer; margin: 2px;
+        }
+        .col-chip:hover { background: #0284c7; color: #fff; }
+
+        .formulas-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 18px; width: 100%; }
+        .formula-card { background: #ffffff; border: 1px solid var(--border-card); border-radius: 8px; padding: 10px 14px; min-width: 0; }
+        .formula-name { font-size: 13.5px; font-weight: 700; color: #0F172A; }
+        .formula-code { font-family: 'JetBrains Mono', monospace !important; font-size: 12.5px; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; color: #0284c7; display: inline-block; margin: 4px 0; word-break: break-all; }
+        .formula-desc { font-size: 13px; color: #334155; }
+
+        #step5-dynamic-filters {
+            display: flex; flex-wrap: wrap; gap: 10px; flex: 1; min-width: 0; width: 100%; align-items: center;
+        }
+        .dyn-filter-select { min-width: 140px; flex: 1; max-width: 240px; font-size: 13.5px; }
+
+        /* Hàng 5 Thẻ KPI */
+        .kpi-row {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; width: 100%; margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: #ffffff; border: 1px solid var(--border-card); border-radius: 14px; padding: 16px 18px;
+            position: relative; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.02); min-width: 0; width: 100%; box-sizing: border-box;
+        }
+        .kpi-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #10b981; }
+        .kpi-card.purple::before { background: #8b5cf6; }
+        .kpi-card.blue::before { background: #2563eb; }
+        .kpi-card.orange::before { background: #f59e0b; }
+        .kpi-card.red::before { background: #ef4444; }
+        .kpi-label { font-size: 12.5px; font-weight: 700; color: #334155; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .kpi-value { font-size: clamp(1.25rem, 1.6vw, 1.6rem); font-weight: 800; color: #0F172A; margin: 6px 0 4px; word-break: break-word; overflow-wrap: anywhere; }
+        .kpi-sub { font-size: 13px; color: #334155; word-break: break-word; }
+
+        /* Quadrant cards */
+        .quadrant-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%; margin-bottom: 16px; }
+        .quad-card {
+            background: #ffffff; border: 1px solid var(--border-card); border-radius: 10px; padding: 12px 14px;
+            display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; flex-wrap: wrap;
+        }
+        .quad-card.star { border-left: 4px solid #10b981; }
+        .quad-card.cow { border-left: 4px solid #0284c7; }
+        .quad-card.trap { border-left: 4px solid #f59e0b; }
+        .quad-card.burner { border-left: 4px solid #ef4444; }
+        .quad-title { font-size: 13px; font-weight: 800; color: #0F172A; }
+        .quad-count { font-size: 20px; font-weight: 800; color: #0F172A; }
+
+        /* Badges */
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+        .badge.star { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .badge.cow { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .badge.trap { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .badge.burner { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .badge.badge-checkpoint { background: var(--brand-gold-bg); color: var(--brand-gold-text); border: 1px solid var(--brand-gold-border); }
+        .badge.red-alert { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .badge.yellow-alert { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .badge.green-alert { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+
+        /* Buttons (Chuẩn Royal Blue theo ảnh) */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 22px;
+            border-radius: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; font-family: inherit; white-space: nowrap;
+        }
+        .btn-primary {
+            background: var(--brand-blue); color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+        .btn-primary:hover {
+            background: var(--brand-blue-hover);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: #ffffff; border: 1px solid #cbd5e1; color: #334155;
+        }
+        .btn-outline:hover { background: #f8fafc; border-color: #94a3b8; }
+
+        /* Charts & Playbook */
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; width: 100%; margin-bottom: 20px; }
+        .chart-card { background: #ffffff; border: 1px solid var(--border-card); border-radius: 14px; padding: 18px; min-width: 0; width: 100%; box-sizing: border-box; box-shadow: 0 1px 4px rgba(0,0,0,0.02); }
+        .chart-container { position: relative; height: 260px; width: 100%; max-width: 100%; }
+        .chart-container canvas, canvas, svg { max-width: 100% !important; }
+
+        .playbook-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 20px; width: 100%; }
+        .playbook-card { background: #ffffff; border: 1px solid var(--border-card); border-radius: 12px; padding: 18px; min-width: 0; width: 100%; box-sizing: border-box; box-shadow: 0 1px 4px rgba(0,0,0,0.02); }
+        .playbook-card.highlights { border-top: 4px solid #10b981; }
+        .playbook-card.bottlenecks { border-top: 4px solid #ef4444; }
+        .playbook-title { font-size: 13.5px; font-weight: 800; color: #1e293b; margin-bottom: 10px; }
+        .playbook-item { font-size: 12.5px; line-height: 1.5; color: #475569; margin-bottom: 8px; padding-left: 12px; position: relative; word-break: break-word; }
+        .playbook-item::before { content: "•"; position: absolute; left: 0; color: #94a3b8; font-weight: bold; }
+
+        .ai-chat-box { background: #ffffff; border: 1px solid var(--border-card); border-radius: 14px; padding: 18px; margin-bottom: 22px; width: 100%; box-sizing: border-box; box-shadow: 0 1px 4px rgba(0,0,0,0.02); }
+        .ai-messages { max-height: 240px; overflow-y: auto; padding: 12px; background: #faf9f6; border: 1px solid var(--border-card); border-radius: 8px; margin-bottom: 12px; font-size: 12.5px; }
+        .ai-msg { margin-bottom: 8px; line-height: 1.5; word-break: break-word; }
+        .ai-msg.user { text-align: right; color: #2563eb; font-weight: 600; }
+        .ai-msg.bot { background: #ffffff; padding: 10px; border-radius: 8px; border: 1px solid var(--border-card); color: #1e293b; }
+        .ai-input-group { display: flex; gap: 8px; width: 100%; }
+        .ai-input { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid var(--border-subtle); border-radius: 8px; font-size: 12.5px; outline: none; font-family: inherit; background: #ffffff; color: #1e293b; }
+
+        @media (max-width: 1100px) {
+            .quadrant-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 992px) {
+            .charts-grid, .playbook-grid, .form-grid, .quadrant-strip { grid-template-columns: 1fr; }
+            aside.sidebar { display: none; }
+            main.content { padding: 16px; height: calc(100vh - 64px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER NAVBAR -->
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="#" class="logo">
+                <div class="logo-icon">📊</div>
+                <span class="logo-title-editorial">Smart BI Studio</span>
+            </a>
+            <span class="pipeline-tag">Pipeline 5 Bước • Zero-Data & Schema-Agnostic 100%</span>
+        </div>
+        <div class="nav-right">
+            <div class="data-status-badge">
+                <span class="status-dot active" id="nav-status-dot"></span>
+                <span id="nav-unlocked-status">Trắng hoàn toàn (Clean Slate • Bước 1/5)</span>
+            </div>
+            <!-- NÚT HARD RESET CỐ ĐỊNH TRÊN HEADER -->
+            <button class="btn-hard-reset" onclick="executeHardReset()" title="Hủy toàn bộ file đã tải, xóa sạch state từ Bước 1 đến Bước 5 và làm mới phiên">
+                🔄 Xóa trắng dữ liệu & Tạo dự án mới (Hard Reset)
+            </button>
+        </div>
+    </header>
+
+    <div class="layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-section-title">PIPELINE 5 BƯỚC TUẦN TỰ</div>
+            <ul class="nav-links">
+                <li id="side-nav-1" class="active">
+                    <a onclick="tryNavigateStep(1)">
+                        <span class="step-badge">1</span> Tiếp nhận Bối cảnh
+                    </a>
+                </li>
+                <li id="side-nav-2" class="locked">
+                    <a onclick="tryNavigateStep(2)">
+                        <span class="step-badge">2</span> Nhập & Kiểm định thô
+                    </a>
+                </li>
+                <li id="side-nav-3" class="locked">
+                    <a onclick="tryNavigateStep(3)">
+                        <span class="step-badge">3</span> Làm sạch & Tiền xử lý
+                    </a>
+                </li>
+                <li id="side-nav-4" class="locked">
+                    <a onclick="tryNavigateStep(4)">
+                        <span class="step-badge">4</span> Ánh xạ & Tính chỉ số BI
+                    </a>
+                </li>
+                <li id="side-nav-5" class="locked">
+                    <a onclick="tryNavigateStep(5)">
+                        <span class="step-badge">5</span> Dashboard & Playbook
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-section-title">CÔNG CỤ PHIÊN LÀM VIỆC</div>
+            <ul class="nav-links">
+                <li><a onclick="executeHardReset()" style="color:#ef4444; font-weight:600;"><span style="margin-right:4px;">🗑</span> Hard Reset (Xóa trắng)</a></li>
+                <li><a onclick="exportCleanData('csv')" style="color:#2563eb; font-weight:600;"><span style="margin-right:4px;">📄</span> Xuất dữ liệu sạch (.CSV)</a></li>
+                <li><a onclick="exportCleanData('xlsx')" style="color:#0284c7; font-weight:600;"><span style="margin-right:4px;">⊞</span> Xuất dữ liệu sạch (.XLSX)</a></li>
+                <li><a onclick="exportReportDocx()" style="color:#1d4ed8; font-weight:700;"><span style="margin-right:4px;">📘</span> Xuất Báo cáo Quản trị (.DOCX)</a></li>
+            </ul>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="content">
+
+            <!-- STEPPER 5 BƯỚC -->
+            <div class="stepper-container">
+                <div class="stepper">
+                    <div class="step-item active" id="step-tab-1" onclick="tryNavigateStep(1)">
+                        <div class="step-bubble">1</div>
+                        <div class="step-text">
+                            <span class="step-subtitle">BƯỚC 1</span>
+                            <span class="step-title">Xác Thực Bối Cảnh</span>
+                        </div>
+                    </div>
+                    <div class="step-divider" id="step-div-1"></div>
+
+                    <div class="step-item locked" id="step-tab-2" onclick="tryNavigateStep(2)">
+                        <div class="step-bubble">2</div>
+                        <div class="step-text">
+                            <span class="step-subtitle">BƯỚC 2</span>
+                            <span class="step-title">Kiểm Định Dữ Liệu Thô</span>
+                        </div>
+                    </div>
+                    <div class="step-divider" id="step-div-2"></div>
+
+                    <div class="step-item locked" id="step-tab-3" onclick="tryNavigateStep(3)">
+                        <div class="step-bubble">3</div>
+                        <div class="step-text">
+                            <span class="step-subtitle">BƯỚC 3</span>
+                            <span class="step-title">Làm Sạch Dữ Liệu</span>
+                        </div>
+                    </div>
+                    <div class="step-divider" id="step-div-3"></div>
+
+                    <div class="step-item locked" id="step-tab-4" onclick="tryNavigateStep(4)">
+                        <div class="step-bubble">4</div>
+                        <div class="step-text">
+                            <span class="step-subtitle">BƯỚC 4</span>
+                            <span class="step-title">Ánh Xạ & Chỉ Số BI</span>
+                        </div>
+                    </div>
+                    <div class="step-divider" id="step-div-4"></div>
+
+                    <div class="step-item locked" id="step-tab-5" onclick="tryNavigateStep(5)">
+                        <div class="step-bubble">5</div>
+                        <div class="step-text">
+                            <span class="step-subtitle">BƯỚC 5</span>
+                            <span class="step-title">Dashboard & Playbook</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================= -->
+            <!-- BƯỚC 1: CONTEXT INGESTION & VALIDATION (CLEAN SLATE) -->
+            <!-- ============================================================= -->
+            <div id="view-step-1" class="step-view active">
+                <div class="panel-box">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title">Bước 1: Tiếp Nhận & Xác Thực Bối Cảnh Doanh Nghiệp</h2>
+                            <div class="panel-subtitle-italic">Context Ingestion & Validation</div>
+                        </div>
+                        <span class="badge badge-checkpoint">Trạm Kiểm Soát 1</span>
+                    </div>
+                    <p class="panel-desc">Hệ thống khởi tạo ở trạng thái Trắng hoàn toàn (Zero-Data Clean Slate). Hãy nhập mô tả bối cảnh hoặc tải lên tài liệu nội bộ của bạn.</p>
+
+                    <!-- Multi-source Context Input -->
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                                <label class="form-label" style="margin-bottom:0;">1. Mô tả trực tiếp bối cảnh doanh nghiệp & bài toán phân tích (Text Prompt)</label>
+                                <button type="button" class="btn btn-outline" onclick="loadSampleStep1()" style="font-size:11.5px; padding:4px 12px; border-color:#2563eb; color:#2563eb; background:#f0f6ff;" title="Tự động điền bối cảnh mẫu và chạy phân tích AI ngay">
+                                    ⚡ Nạp bối cảnh mẫu (E-Commerce B2C)
+                                </button>
+                            </div>
+                            <textarea id="step1-raw-text" class="form-textarea" rows="7" placeholder="Nhập ngành nghề, mô hình kinh doanh (B2B/B2C/E-commerce/F&B...), quy mô, mục tiêu phân tích cốt lõi, các câu hỏi trọng tâm và ràng buộc dữ liệu của bạn..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">2. Hoặc tải lên tài liệu bối cảnh nội bộ</label>
+                            <div class="upload-dropzone" id="context-dropzone">
+                                <input type="file" id="context-doc-uploader" class="file-hidden-input" accept=".txt,.md,.json,.csv,.docx,.pdf,.pptx" onchange="handleContextDocUpload(event)">
+                                <div class="upload-arrow-circle">↑</div>
+                                <div class="upload-main-text" id="context-doc-label">Kéo thả tài liệu bối cảnh hoặc chọn tệp</div>
+                                <div class="upload-sub-text">Trích xuất thông tin mô hình kinh doanh, từ điển dữ liệu, báo cáo cũ</div>
+                                <div class="ext-tags">
+                                    <span class="ext-tag">.txt</span>
+                                    <span class="ext-tag">.md</span>
+                                    <span class="ext-tag">.docx</span>
+                                    <span class="ext-tag">.pdf</span>
+                                    <span class="ext-tag">.pptx</span>
+                                    <span class="ext-tag">.json</span>
+                                </div>
+                                <button type="button" class="btn-choose-file" style="pointer-events:none;">Chọn tệp từ máy tính</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:20px;">
+                        <button type="button" class="btn btn-outline" onclick="skipToStep2()" style="font-size:12.5px; padding:9px 18px; color:#2563eb; border-color:#93c5fd;" title="Đi thẳng đến Bước 2 để tải file dữ liệu Excel/CSV">
+                            ⏭ Bỏ qua bối cảnh & Mở khóa Bước 2 (Nhập file dữ liệu)
+                        </button>
+                        <button class="btn btn-primary" onclick="analyzeStep1Context()">
+                            Phân Tích & Xuất Hồ Sơ Bối Cảnh Doanh Nghiệp →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Khu vực hiển thị Hồ sơ Bối cảnh sau khi phân tích -->
+                <div class="panel-box" id="step1-profile-panel" style="display:none;">
+                    <div class="panel-header">
+                        <div>
+                            <h3 class="panel-title" style="font-size:20px;">📋 Hồ Sơ Bối Cảnh Doanh Nghiệp (Business Profile Summary)</h3>
+                            <p class="panel-subtitle" id="disp-source-summary"></p>
+                        </div>
+                        <button class="btn btn-outline" onclick="toggleManualEditStep1()">✏️ Chỉnh sửa trực tiếp hồ sơ</button>
+                    </div>
+
+                    <div class="profile-card">
+                        <div class="profile-item">
+                            <div class="profile-label">🏢 Tổng Quan Doanh Nghiệp (Ngành nghề, Mô hình, Quy mô)</div>
+                            <div class="profile-value" id="disp-company-overview"></div>
+                        </div>
+                        <div class="profile-item">
+                            <div class="profile-label">🎯 Mục Tiêu Phân Tích & Câu Hỏi Trọng Tâm</div>
+                            <div class="profile-value" id="disp-primary-goal" style="color:#38bdf8; margin-bottom:6px;"></div>
+                            <ul class="profile-questions" id="disp-key-questions"></ul>
+                        </div>
+                        <div class="profile-item" style="margin-bottom:0;">
+                            <div class="profile-label">📊 Dữ Liệu & Ràng Buộc Đi Kèm</div>
+                            <div class="profile-value" id="disp-data-constraints" style="font-size:12.5px; color:#94a3b8;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Form chỉnh sửa bổ sung nếu người dùng muốn sửa -->
+                    <div id="step1-manual-edit-box" style="display:none; background:#111218; border:1px solid var(--border-card); border-radius:10px; padding:16px; margin-bottom:16px;">
+                        <div class="form-group">
+                            <label class="form-label">🏢 Tổng quan Doanh nghiệp:</label>
+                            <input type="text" id="edit-company-overview" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">🎯 Mục tiêu Phân tích chính:</label>
+                            <input type="text" id="edit-primary-goal" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">❓ Các câu hỏi trọng tâm (mỗi dòng 1 câu):</label>
+                            <textarea id="edit-key-questions" class="form-textarea" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">📊 Dữ liệu & Ràng buộc đi kèm:</label>
+                            <input type="text" id="edit-data-constraints" class="form-input">
+                        </div>
+                        <button class="btn btn-primary" onclick="saveEditedStep1Profile()">Lưu Bản Cập Nhật Hồ Sơ</button>
+                    </div>
+
+                    <!-- TRẠM KIỂM SOÁT BƯỚC 1 -->
+                    <div class="checkpoint-box">
+                        <div class="checkpoint-header">⚠️ [TRẠM KIỂM SOÁT BƯỚC 1]: XÁC NHẬN HỒ SƠ BỐI CẢNH DOANH NGHIỆP</div>
+                        <div class="checkpoint-text">
+                            Tôi đã tiếp nhận và tổng hợp hồ sơ bối cảnh doanh nghiệp của bạn như trên.<br>
+                            👉 Bạn hãy kiểm tra xem thông tin đã chính xác và đủ ý chưa?<br>
+                            - Nếu <strong>ĐÃ ĐÚNG</strong>, vui lòng gõ <code>Xác nhận</code> / <code>Tiếp tục</code> vào ô bên dưới hoặc bấm nút xác nhận để chuyển sang <strong>Bước 2 (Đánh giá chất lượng dữ liệu thô)</strong>.<br>
+                            - Nếu <strong>CẦN CHỈNH SỬA / BỔ SUNG</strong>, hãy bấm nút <em>"Chỉnh sửa trực tiếp hồ sơ"</em> ở trên.
+                        </div>
+                        <div class="checkpoint-actions">
+                            <div class="gate-input-wrap">
+                                <input type="text" id="gate-input-1" class="gate-input" placeholder="Gõ 'Xác nhận' hoặc 'Tiếp tục'..." onkeydown="if(event.key==='Enter') handleGateText(1)">
+                                <button class="btn btn-outline" onclick="handleGateText(1)">Gửi lệnh</button>
+                            </div>
+                            <button class="btn btn-primary" onclick="confirmStep1()">
+                                ✅ Xác nhận & Mở khóa Bước 2 (Nhập dữ liệu thô) →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trạng thái trống khi chưa nhập bối cảnh (Theo đúng mẫu có icon ngôi sao ✦) -->
+                <div class="empty-slate-box" id="step1-empty-banner">
+                    <div class="empty-slate-sparkle-top">✦</div>
+                    <h4>Trạng Thái Khởi Tạo Trắng Hoàn Toàn (Zero-Data Clean Slate)</h4>
+                    <p>Chưa có bất kỳ dữ liệu giả lập hay bối cảnh gán cứng nào. Vui lòng nhập mô tả bối cảnh doanh nghiệp hoặc tải tài liệu lên ở khung trên và bấm "Phân Tích & Xuất Hồ Sơ Bối Cảnh Doanh Nghiệp" để bắt đầu Bước 1.</p>
+                </div>
+            </div>
+
+            <!-- ============================================================= -->
+            <!-- BƯỚC 2: RAW DATA INGESTION & DATA PROFILING -->
+            <!-- ============================================================= -->
+            <div id="view-step-2" class="step-view">
+                <div class="panel-box">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title">📂 Bước 2: Nhập File Dữ Liệu Thật & Kiểm Định Chất Lượng Sơ Bộ (Data Profiling)</h2>
+                            <p class="panel-subtitle">Đọc 100% cấu trúc cột động từ dòng tiêu đề đầu tiên của file (.xlsx, .xls, .csv, .json) đối chiếu với Bối cảnh Bước 1.</p>
+                        </div>
+                        <span class="badge yellow-alert" id="step2-health-badge">Chưa tải file dữ liệu</span>
+                    </div>
+
+                    <div class="upload-dropzone" id="dropzone">
+                        <input type="file" id="file-uploader" class="file-hidden-input" accept=".csv, .xlsx, .xls, .json" onchange="handleDataFileSelected(event)">
+                        <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        <div class="upload-main-text">Kéo & Thả file dữ liệu (.xlsx, .xls, .csv, .json) vào đây hoặc <span style="color:#2563eb; text-decoration:underline;">chọn file từ máy tính</span></div>
+                        <div class="upload-sub-text">Tự động nhận diện danh sách cột mới hoàn toàn từ dòng tiêu đề đầu tiên (Header Row)</div>
+                    </div>
+
+                    <div style="margin-top:14px; display:flex; justify-content:center; gap:10px;">
+                        <button type="button" class="btn btn-outline" onclick="loadSampleStep2Data()" style="font-size:12.5px; padding:8px 20px; border-color:#2563eb; color:#2563eb; background:#f0f6ff;" title="Nạp nhanh bộ dữ liệu kinh doanh 200 đơn hàng thực tế để kiểm tra ngay toàn bộ Bước 2, 3, 4, 5">
+                            ⚡ Nạp nhanh Dữ liệu Kinh doanh Mẫu (200 đơn hàng Đa Kênh)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Kết quả Kiểm định Bước 2 (Chỉ hiện sau khi người dùng tải file thật) -->
+                <div id="step2-results-container" style="display:none;">
+                    <div class="panel-box">
+                        <div class="panel-header">
+                            <h3 class="panel-title">🩺 Báo Cáo Đánh Giá Chất Lượng Dữ Liệu Sơ Bộ (Data Profiling Report)</h3>
+                            <span style="font-size:12px; font-weight:700; color:#059669;" id="step2-file-info"></span>
+                        </div>
+
+                        <div class="health-grid">
+                            <div class="health-card">
+                                <div class="health-card-label">Quy Mô Tập Dữ Liệu</div>
+                                <div class="health-card-value" id="h-total-rows">--</div>
+                                <div class="health-card-desc"><span id="h-total-cols">--</span> cột được phát hiện</div>
+                            </div>
+                            <div class="health-card">
+                                <div class="health-card-label">Giá Trị Khuyết Thiếu (Missing)</div>
+                                <div class="health-card-value" id="h-missing-cells" style="color:#dc2626;">--</div>
+                                <div class="health-card-desc">Ô bị trống / Null</div>
+                            </div>
+                            <div class="health-card">
+                                <div class="health-card-label">Dòng Trùng Lặp (Duplicates)</div>
+                                <div class="health-card-value" id="h-duplicate-rows" style="color:#d97706;">--</div>
+                                <div class="health-card-desc">Bản ghi trùng 100%</div>
+                            </div>
+                            <div class="health-card">
+                                <div class="health-card-label">Lỗi Định Dạng (Format Errors)</div>
+                                <div class="health-card-value" id="h-format-errors">--</div>
+                                <div class="health-card-desc">Chứa chữ trong cột số / khoảng trắng</div>
+                            </div>
+                            <div class="health-card">
+                                <div class="health-card-label">Lỗi Logic & Ngoại Lai (Outliers)</div>
+                                <div class="health-card-value" id="h-logic-anomalies">--</div>
+                                <div class="health-card-desc">Số âm, Hoàn > Đặt, vượt P99/IQR</div>
+                            </div>
+                        </div>
+
+                        <div class="panel-header" style="margin-top:16px;">
+                            <h4 style="font-size:13.5px; font-weight:800;">📋 Phân Loại Cấu Trúc Cột Động (Date, Dimensions, Metrics) & Chi Tiết Lỗi</h4>
+                        </div>
+                        <div class="table-responsive" style="width: 100%; max-width: 100%; overflow-x: auto;">
+                            <table class="bi-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tên Cột Trong File</th>
+                                        <th>Nhóm Cấu Trúc Tự Động Nhận Diện</th>
+                                        <th>Số Ô Trống (Null)</th>
+                                        <th>Tỷ Lệ Trống %</th>
+                                        <th>Lỗi Định Dạng</th>
+                                        <th>Lỗi Logic / Ngoại Lai</th>
+                                        <th>Mẫu Giá Trị Thực Tế</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="step2-profiling-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel-box">
+                        <div class="panel-header">
+                            <div>
+                                <h3 class="panel-title">🔍 Bảng Xem Trước Dữ Liệu Thô (Raw Data Preview)</h3>
+                                <p class="panel-subtitle">Tô màu ĐỎ/VÀNG trực tiếp tại các ô bị lỗi trong file tải lên:</p>
+                            </div>
+                            <div style="display:flex; gap:10px; font-size:11px; align-items:center;">
+                                <span><span style="display:inline-block; width:12px; height:12px; background:#fee2e2; border:1px solid #ef4444; border-radius:3px;"></span> Đỏ: Ô trống (Null)</span>
+                                <span><span style="display:inline-block; width:12px; height:12px; background:#fef3c7; border:1px solid #f59e0b; border-radius:3px;"></span> Vàng: Lỗi định dạng</span>
+                                <span><span style="display:inline-block; width:12px; height:12px; background:#f3e8ff; border:1px solid #a855f7; border-radius:3px;"></span> Tím: Ngoại lai / Lỗi logic</span>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive" style="width: 100%; max-width: 100%; overflow-x: auto;">
+                            <table class="bi-table">
+                                <thead id="step2-raw-thead"></thead>
+                                <tbody id="step2-raw-tbody"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- TRẠM KIỂM SOÁT BƯỚC 2 -->
+                        <div class="checkpoint-box">
+                            <div class="checkpoint-header">⚠️ [TRẠM KIỂM SOÁT BƯỚC 2]: XÁC NHẬN BÁO CÁO CHẤT LƯỢNG DỮ LIỆU THÔ</div>
+                            <div class="checkpoint-text">
+                                Tôi đã hoàn tất kiểm định chất lượng dữ liệu thô và phát hiện các vấn đề nêu trên.<br>
+                                👉 Bạn có đồng ý chuyển sang <strong>Bước 3</strong> để tiến hành làm sạch dữ liệu theo các đề xuất xử lý không? Hãy gõ <code>Xác nhận</code> hoặc bấm nút bên dưới.
+                            </div>
+                            <div class="checkpoint-actions">
+                                <div class="gate-input-wrap">
+                                    <input type="text" id="gate-input-2" class="gate-input" placeholder="Gõ 'Xác nhận' để sang Bước 3..." onkeydown="if(event.key==='Enter') handleGateText(2)">
+                                    <button class="btn btn-outline" onclick="handleGateText(2)">Gửi lệnh</button>
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    <button class="btn btn-outline" onclick="goToStep(1)">← Quay lại Bước 1</button>
+                                    <button class="btn btn-primary" onclick="confirmStep2()">
+                                        ✅ Xác nhận & Mở khóa Bước 3 (Làm sạch dữ liệu) →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="empty-slate-box" id="step2-empty-banner">
+                    <h4>📂 Chờ Tải File Dữ Liệu Thô Mới</h4>
+                    <p>Hãy kéo thả file Excel (<code>.xlsx</code>, <code>.xls</code>), <code>.csv</code> hoặc <code>.json</code> của bạn vào vùng tải file ở trên để hệ thống quét dòng tiêu đề và kiểm định chất lượng dữ liệu.</p>
+                </div>
+            </div>
+
+            <!-- ============================================================= -->
+            <!-- BƯỚC 3: DATA CLEANING & PREPROCESSING -->
+            <!-- ============================================================= -->
+            <div id="view-step-3" class="step-view">
+                <div class="panel-box">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title">🧹 Bước 3: Làm Sạch & Tiền Xử Lý Dữ Liệu Chuẩn BI (Data Cleaning & Preprocessing)</h2>
+                            <p class="panel-subtitle">Xử lý giá trị khuyết thiếu, chuẩn hóa định dạng, khử trùng lặp và giới hạn ngoại lai P99 trên các cột thực tế của file.</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="applyCleaning(true)">
+                            ⚡ Thực Thi Làm Sạch Tự Động Chuẩn BI
+                        </button>
+                    </div>
+
+                    <div class="clean-options-grid">
+                        <div class="clean-option-card">
+                            <h4>🔢 1. Xử lý Giá trị Thiếu Cột Số (Metrics Imputation)</h4>
+                            <select id="clean-numeric-select" class="clean-select">
+                                <option value="median" selected>Điền bằng Trung vị (Median - Khuyên dùng)</option>
+                                <option value="mean">Điền bằng Trung bình (Mean)</option>
+                                <option value="zero">Điền bằng hằng số 0</option>
+                                <option value="drop">Loại bỏ dòng bị khuyết</option>
+                            </select>
+                        </div>
+
+                        <div class="clean-option-card">
+                            <h4>🏷️ 2. Xử lý Giá trị Thiếu Cột Phân Loại (Dimensions)</h4>
+                            <select id="clean-cat-select" class="clean-select">
+                                <option value="unknown" selected>Điền nhãn "Chưa phân loại (Unknown)"</option>
+                                <option value="mode">Điền theo giá trị phổ biến nhất (Mode)</option>
+                            </select>
+                        </div>
+
+                        <div class="clean-option-card">
+                            <h4>✨ 3. Chuẩn Hóa & Khử Trùng (Standardization)</h4>
+                            <label class="clean-checkbox-label">
+                                <input type="checkbox" id="clean-dedup-check" checked>
+                                <span>Xóa bỏ các dòng trùng lặp 100%</span>
+                            </label>
+                            <label class="clean-checkbox-label">
+                                <input type="checkbox" id="clean-trim-check" checked disabled>
+                                <span>Lọc ký tự chữ trong cột số, cắt khoảng trắng (Trim) & chuẩn hóa YYYY-MM-DD</span>
+                            </label>
+                        </div>
+
+                        <div class="clean-option-card">
+                            <h4>⚖️ 4. Xử Lý Ngoại Lai & Lỗi Logic (Outliers)</h4>
+                            <select id="clean-outlier-select" class="clean-select">
+                                <option value="cap" selected>Giới hạn trần phân vị thứ 99 (Winsorization at P99) & Sửa lỗi logic</option>
+                                <option value="drop">Loại bỏ các dòng vượt ngưỡng ngoại lai / sai logic</option>
+                                <option value="keep">Giữ nguyên giá trị gốc</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; justify-content:flex-end;">
+                        <button class="btn btn-outline" onclick="applyCleaning(false)">
+                            Áp Dụng Cấu Hình Làm Sạch Tùy Chỉnh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bảng Đối chiếu Trước & Sau Khi Làm Sạch -->
+                <div class="panel-box">
+                    <div class="panel-header">
+                        <h3 class="panel-title">📊 Bảng Đối Chiếu Trước & Sau Khi Làm Sạch (Before vs. After Cleaning Log)</h3>
+                    </div>
+
+                    <div class="stats-diff-grid">
+                        <div class="stats-diff-card">
+                            <div class="sub-label">Số Dòng Ban Đầu</div>
+                            <div class="num-primary" id="log-rows-before">0</div>
+                        </div>
+                        <div class="stats-diff-card">
+                            <div class="sub-label">Số Dòng Sạch Còn Lại</div>
+                            <div class="num-primary" id="log-rows-after">0</div>
+                        </div>
+                        <div class="stats-diff-card">
+                            <div class="sub-label">Số Ô Khuyết Đã Điền</div>
+                            <div class="num-primary" id="log-cells-filled">0</div>
+                        </div>
+                        <div class="stats-diff-card">
+                            <div class="sub-label">Dòng Trùng Đã Xóa</div>
+                            <div class="num-primary" id="log-dups-removed">0</div>
+                        </div>
+                        <div class="stats-diff-card">
+                            <div class="sub-label">Ngoại Lai & Logic Đã Xử Lý</div>
+                            <div class="num-primary" id="log-outliers-treated">0</div>
+                        </div>
+                    </div>
+
+                    <div class="panel-header" style="margin-top:16px;">
+                        <h4 style="font-size:13.5px; font-weight:800;">📈 Bảng So Sánh Thống Kê Mô Tả (Count, Mean, Median, Min, Max, Độ Lệch Chuẩn Std)</h4>
+                    </div>
+                    <div class="table-responsive" style="width: 100%; max-width: 100%; overflow-x: auto;">
+                        <table class="bi-table">
+                            <thead>
+                                <tr>
+                                    <th>Cột Định Lượng</th>
+                                    <th>Count (Trước ➔ Sau)</th>
+                                    <th>Mean (Trước ➔ Sau)</th>
+                                    <th>Median (Trước ➔ Sau)</th>
+                                    <th>Min (Trước ➔ Sau)</th>
+                                    <th>Max (Trước ➔ Sau)</th>
+                                    <th>Độ Lệch Chuẩn Std (Trước ➔ Sau)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="step3-stats-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="panel-box">
+                    <div class="panel-header">
+                        <h3 class="panel-title">✅ Xem Trước Tập Dữ Liệu Sạch (Cleaned Data Preview)</h3>
+                    </div>
+                    <div class="table-responsive" style="width: 100%; max-width: 100%; overflow-x: auto;">
+                        <table class="bi-table">
+                            <thead id="step3-clean-thead"></thead>
+                            <tbody id="step3-clean-tbody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- TRẠM KIỂM SOÁT BƯỚC 3 -->
+                    <div class="checkpoint-box">
+                        <div class="checkpoint-header">⚠️ [TRẠM KIỂM SOÁT BƯỚC 3]: XÁC NHẬN TẬP DỮ LIỆU SẠCH</div>
+                        <div class="checkpoint-text">
+                            Dữ liệu đã được làm sạch và chuẩn hóa. Bạn hãy kiểm tra Bảng đối chiếu thống kê Trước & Sau khi làm sạch.<br>
+                            👉 Gõ <code>Xác nhận</code> hoặc bấm nút bên dưới để khóa tập dữ liệu sạch và chuyển sang <strong>Bước 4 (Ánh xạ cột động & Tính toán chỉ số BI)</strong>.
+                        </div>
+                        <div class="checkpoint-actions">
+                            <div class="gate-input-wrap">
+                                <input type="text" id="gate-input-3" class="gate-input" placeholder="Gõ 'Xác nhận' hoặc 'Tiếp tục'..." onkeydown="if(event.key==='Enter') handleGateText(3)">
+                                <button class="btn btn-outline" onclick="handleGateText(3)">Gửi lệnh</button>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn btn-outline" onclick="goToStep(2)">← Quay lại Bước 2</button>
+                                <button class="btn btn-primary" onclick="confirmStep3()">
+                                    ✅ Xác nhận & Mở khóa Bước 4 (Ánh xạ & Tính chỉ số) →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================= -->
+            <!-- BƯỚC 4: DYNAMIC COLUMN MAPPING, CUSTOM FORMULAS & 4-QUADRANT -->
+            <!-- ============================================================= -->
+            <div id="view-step-4" class="step-view">
+                <div class="panel-box">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title">⚙️ Bước 4: Ghép Nối Cột Linh Hoạt (Dynamic Mapping) & Tính Toán Unit Economics</h2>
+                            <p class="panel-subtitle">Tự do chỉ định cột nào trong file mới dùng làm Doanh thu, Chi phí, Giá vốn, Số lượng hoặc tự tạo công thức cột mới.</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="runStep4Processing()">
+                            🔄 Áp Dụng Ghép Nối Cột & Tính Lại Chỉ Số
+                        </button>
+                    </div>
+
+                    <!-- 12 Dynamic Column Mapping Dropdowns -->
+                    <div class="mapping-grid">
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Cột Thời Gian (Date/Time)</span> <span class="mapping-badge badge-date">Date</span></div>
+                            <select id="map-date" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Chiều Phân Tích 1 (Kênh / Nguồn)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
+                            <select id="map-channel" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Chiều Phân Tích 2 (Chiến Dịch / Nhóm)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
+                            <select id="map-campaign" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Chiều Phân Tích 3 (Danh Mục / SP)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
+                            <select id="map-category" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Chiều Phân Tích 4 (Khu Vực / Chi Nhánh)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
+                            <select id="map-region" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Doanh Thu (Revenue / GMV)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                            <select id="map-revenue" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Đơn Giá (Unit Price - Tùy chọn)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                            <select id="map-unit-price" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Số Lượng Đơn (Orders / Quantity)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                            <select id="map-quantity" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Chi Phí Quảng Cáo (Ad Spend / Cost)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                            <select id="map-cost" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Giá Vốn Hàng Bán (COGS)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                            <select id="map-cogs" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Lợi Nhuận Có Sẵn (Profit / Margin)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                            <select id="map-profit" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Lượt Truy Cập (Traffic / Clicks)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                            <select id="map-traffic" class="clean-select"></select>
+                        </div>
+                        <div class="mapping-item">
+                            <div class="mapping-label"><span>Đơn Hoàn / Hủy (Returned Orders)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                            <select id="map-returned" class="clean-select"></select>
+                        </div>
+                    </div>
+
+                    <!-- Trình tạo Công thức Cột Mới (Custom Formula Builder) -->
+                    <div style="background:#111218; border:1px solid var(--border-card); border-radius:10px; padding:16px; margin-top:12px;">
+                        <h4 style="font-size:13.5px; font-weight:800; margin-bottom:6px; color:#ffffff;">➕ Tự Tạo Công Thức Cột Mới Trên Giao Diện (Custom Formula Builder)</h4>
+                        <p style="font-size:12px; color:#94a3b8; margin-bottom:10px;">Bấm vào tên cột bên dưới để chèn vào biểu thức toán học (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>()</code>). Cột mới tạo có thể dùng ngay cho phân tích hoặc ghép nối:</p>
+                        <div id="available-col-chips" style="margin-bottom:10px;"></div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <input type="text" id="custom-col-name" class="form-input" placeholder="Tên cột mới (VD: Lợi_Nhuận_Thuần)" style="width:240px;">
+                            <input type="text" id="custom-col-expr" class="form-input" placeholder="Công thức: VD [Doanh_Thu] - [Chi_Phí] * 1.1" style="flex:1; min-width:260px;">
+                            <button class="btn btn-outline" onclick="addCustomFormula()">+ Thêm Công Thức & Tính Toán</button>
+                        </div>
+                        <div id="active-custom-formulas" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+                    </div>
+                </div>
+
+                <!-- 4-Quadrant Activity Matrix Summary -->
+                <div class="panel-box" style="padding:16px 20px;">
+                    <div class="panel-header" style="margin-bottom:12px;">
+                        <h4 style="font-size:14px; font-weight:800;">🎯 Phân Nhóm Ma Trận Hoạt Động 4 Góc Phần Tư (4-Quadrant Activity Matrix)</h4>
+                    </div>
+                    <div class="quadrant-strip">
+                        <div class="quad-card star">
+                            <div>
+                                <div class="quad-title">🌟 Ngôi Sao Tăng Trưởng</div>
+                                <div style="font-size:11px; color:var(--text-muted);">Doanh thu lớn + Biên LN cao</div>
+                            </div>
+                            <div class="quad-count" id="step4-count-star">0</div>
+                        </div>
+                        <div class="quad-card cow">
+                            <div>
+                                <div class="quad-title">🐄 Bò Sữa Sinh Lời</div>
+                                <div style="font-size:11px; color:var(--text-muted);">Hiệu quả cao / Tỷ lệ hoàn thấp</div>
+                            </div>
+                            <div class="quad-count" id="step4-count-cow">0</div>
+                        </div>
+                        <div class="quad-card trap">
+                            <div>
+                                <div class="quad-title">⚠️ Bẫy Doanh Thu Ảo</div>
+                                <div style="font-size:11px; color:var(--text-muted);">Doanh thu cao nhưng rủi ro/hoàn lớn</div>
+                            </div>
+                            <div class="quad-count" id="step4-count-trap">0</div>
+                        </div>
+                        <div class="quad-card burner">
+                            <div>
+                                <div class="quad-title">🔥 Đốt Tiền / Cần Cắt Lỗ</div>
+                                <div style="font-size:11px; color:var(--text-muted);">Lợi nhuận âm hoặc hiệu quả kém</div>
+                            </div>
+                            <div class="quad-count" id="step4-count-burner">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danh sách Công thức & Bảng Processed Data -->
+                <div class="panel-box">
+                    <div class="panel-header">
+                        <h3 class="panel-title">📐 Hệ Thống Chỉ Số Phái Sinh & Bảng Dữ Liệu Đã Tính Toán</h3>
+                    </div>
+                    <div class="formulas-list" id="formulas-container"></div>
+
+                    <!-- Tùy chọn Hiển thị Bảng: Group-by vs Row-level -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin:14px 0 12px; padding:10px 16px; background:rgba(30,41,59,0.03); border:1px solid var(--border-card); border-radius:8px;">
+                        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                            <span style="font-size:13px; font-weight:700; color:#0f172a;">Chế độ hiển thị:</span>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; font-weight:600;">
+                                <input type="radio" name="step4_view_mode" id="step4-mode-group" value="group" checked onchange="switchStep4ViewMode('group')">
+                                📊 Đánh giá theo Nhóm hoạt động (Group-by)
+                            </label>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; font-weight:600;">
+                                <input type="radio" name="step4_view_mode" id="step4-mode-row" value="row" onchange="switchStep4ViewMode('row')">
+                                📄 Xem chi tiết từng dòng bản ghi (Row-level)
+                            </label>
+                        </div>
+                        <div id="step4-dim-selector-wrap" style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:12.5px; font-weight:600; color:#475569;">Nhóm theo chiều:</span>
+                            <select id="step4-group-dim-select" class="clean-select" style="min-width:180px; font-weight:700;" onchange="changeStep4GroupDim(this.value)"></select>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive" style="width: 100%; max-width: 100%; overflow-x: auto;">
+                        <table class="bi-table">
+                            <thead id="step4-processed-thead"></thead>
+                            <tbody id="step4-processed-tbody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- TRẠM KIỂM SOÁT BƯỚC 4 -->
+                    <div class="checkpoint-box">
+                        <div class="checkpoint-header">⚠️ [TRẠM KIỂM SOÁT BƯỚC 4]: XÁC NHẬN BỘ CHỈ SỐ UNIT ECONOMICS & MA TRẬN 4 GÓC</div>
+                        <div class="checkpoint-text">
+                            Hệ thống đã tính toán xong bộ chỉ số Unit Economics và phân nhóm Ma trận 4 góc phần tư.<br>
+                            👉 Bạn có muốn điều chỉnh công thức hay ghép nối cột nào không? Nếu đã chuẩn, hãy gõ <code>Xác nhận</code> hoặc bấm nút bên dưới để xuất <strong>Dashboard & Kế hoạch Hành động ở Bước 5</strong>.
+                        </div>
+                        <div class="checkpoint-actions">
+                            <div class="gate-input-wrap">
+                                <input type="text" id="gate-input-4" class="gate-input" placeholder="Gõ 'Xác nhận' để mở khóa Bước 5..." onkeydown="if(event.key==='Enter') handleGateText(4)">
+                                <button class="btn btn-outline" onclick="handleGateText(4)">Gửi lệnh</button>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn btn-outline" onclick="goToStep(3)">← Quay lại Bước 3</button>
+                                <button class="btn btn-primary" onclick="confirmStep4()">
+                                    ✅ Xác nhận & Mở khóa Bước 5 (BI Dashboard & Playbook) →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================= -->
+            <!-- BƯỚC 5: BI DASHBOARD & ACTIONABLE PLAYBOOK -->
+            <!-- ============================================================= -->
+            <div id="view-step-5" class="step-view">
+                <!-- Khung Nổi Bật Xuất Báo Cáo Quản Trị DOCX -->
+                <div class="panel-box" style="padding:18px 24px; background: linear-gradient(135deg, #f0f7ff 0%, #f5fbf7 100%); border: 1.5px solid #bfdbfe; margin-bottom: 18px; box-shadow: 0 4px 16px rgba(37, 99, 235, 0.08); border-radius: 12px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+                        <div style="display:flex; align-items:center; gap:16px; min-width:280px; flex:1;">
+                            <div style="font-size:38px; line-height:1; flex-shrink:0;">📄</div>
+                            <div>
+                                <div style="font-size:16px; font-weight:800; color:#0f172a; margin-bottom:4px;">
+                                    Báo cáo Quản trị BI Hoàn chỉnh đã sẵn sàng
+                                </div>
+                                <div style="font-size:13.5px; color:#334155; line-height:1.5;">
+                                    Đã tổng hợp toàn diện: Hồ sơ bối cảnh, Kiểm định chất lượng thô, Nhật ký làm sạch, Bảng đối chiếu Before/After, KPI & Unit Economics, Ma trận 4 góc và Actionable Playbook.
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                            <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#334155; cursor:pointer; user-select:none;">
+                                <input type="checkbox" id="auto-download-docx" style="accent-color:#2563eb; width:16px; height:16px;">
+                                <span>Tự động tải về khi kết thúc</span>
+                            </label>
+                            <button onclick="exportReportDocx()" class="btn-primary" style="background:#2563eb; color:#ffffff; font-size:14px; font-weight:700; padding:12px 24px; border-radius:8px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3); display:inline-flex; align-items:center; gap:8px; cursor:pointer; border:none;">
+                                <span style="font-size:16px;">📥</span> Xuất Báo Cáo Quản Trị (.DOCX)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bộ lọc tương tác động theo các cột thực tế của file -->
+                <div class="panel-box" style="padding:14px 20px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                        <div style="font-size:13px; font-weight:800; color:#0f172a;">
+                            🎛️ Bộ Lọc Đa Chiều Động (Dynamic Filters từ File của bạn):
+                        </div>
+                        <div id="step5-dynamic-filters" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;"></div>
+                    </div>
+                </div>
+
+                <!-- Executive KPI Cards -->
+                <div class="kpi-row">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Tổng GMV & Thực Thu</div>
+                        <div class="kpi-value" id="kpi-total-revenue">--</div>
+                        <div class="kpi-sub">Thực thu: <strong id="kpi-net-revenue">--</strong></div>
+                    </div>
+                    <div class="kpi-card orange">
+                        <div class="kpi-label">Đơn Hàng & Tỷ Lệ Hoàn</div>
+                        <div class="kpi-value" id="kpi-return-rate">--</div>
+                        <div class="kpi-sub">Hoàn: <span id="kpi-returned-count">--</span> / <span id="kpi-total-orders">--</span> đơn</div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="kpi-label">AOV & Chuyển Đổi (CR%)</div>
+                        <div class="kpi-value" id="kpi-aov">--</div>
+                        <div class="kpi-sub">Tỷ lệ chuyển đổi CR: <strong id="kpi-cr">--</strong></div>
+                    </div>
+                    <div class="kpi-card purple">
+                        <div class="kpi-label">Chi Phí Ads & ROAS</div>
+                        <div class="kpi-value" id="kpi-roas">--</div>
+                        <div class="kpi-sub">Ads: <span id="kpi-total-cost">--</span> | CIR: <span id="kpi-cir">--</span></div>
+                    </div>
+                    <div class="kpi-card red">
+                        <div class="kpi-label">Lợi Nhuận Ròng & Giá Vốn</div>
+                        <div class="kpi-value" id="kpi-net-profit">--</div>
+                        <div class="kpi-sub">Biên ròng: <strong id="kpi-net-margin">--</strong> | COGS: <span id="kpi-total-cogs">--</span></div>
+                    </div>
+                </div>
+
+                <!-- 4-Quadrant Status Strip -->
+                <div class="panel-box" style="padding:16px 20px;">
+                    <div class="panel-header" style="margin-bottom:12px;">
+                        <h4 style="font-size:14px; font-weight:800;">🎯 Phân Bổ Ma Trận 4 Góc Phần Tư</h4>
+                        <span id="system-alert-badge" class="badge green-alert">TRẠNG THÁI HỆ THỐNG</span>
+                    </div>
+                    <div class="quadrant-strip">
+                        <div class="quad-card star">
+                            <div><div class="quad-title">🌟 Ngôi Sao Tăng Trưởng</div><div style="font-size:11px; color:var(--text-muted);">Scale-up</div></div>
+                            <div class="quad-count" id="kpi-count-star">0</div>
+                        </div>
+                        <div class="quad-card cow">
+                            <div><div class="quad-title">🐄 Bò Sữa Sinh Lời</div><div style="font-size:11px; color:var(--text-muted);">Cash Cow</div></div>
+                            <div class="quad-count" id="kpi-count-cow">0</div>
+                        </div>
+                        <div class="quad-card trap">
+                            <div><div class="quad-title">⚠️ Bẫy Doanh Thu Ảo</div><div style="font-size:11px; color:var(--text-muted);">Volume Trap</div></div>
+                            <div class="quad-count" id="kpi-count-trap">0</div>
+                        </div>
+                        <div class="quad-card burner">
+                            <div><div class="quad-title">🔥 Đốt Tiền / Cắt Lỗ</div><div style="font-size:11px; color:var(--text-muted);">Cash Burner</div></div>
+                            <div class="quad-count" id="kpi-count-burner">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4 Biểu Đồ Tương Tác -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <div class="panel-header"><h4 class="panel-title">📈 Xu Hướng Doanh Thu, Chi Phí Ads & Lợi Nhuận Ròng</h4></div>
+                        <div class="chart-container"><canvas id="timeTrendChart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="panel-header"><h4 class="panel-title">🏆 So Sánh Hiệu Quả Giữa Các Nhóm / Kênh</h4></div>
+                        <div class="chart-container"><canvas id="channelBarChart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="panel-header"><h4 class="panel-title">🍩 Cơ Cấu Tỷ Trọng Đóng Góp Doanh Thu</h4></div>
+                        <div class="chart-container"><canvas id="categoryDonutChart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="panel-header"><h4 class="panel-title">🎯 Biểu Đồ Ma Trận 4 Góc (ROAS/AOV vs Net Margin%)</h4></div>
+                        <div class="chart-container"><canvas id="matrixScatterChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Activity Scorecard -->
+                <div class="panel-box">
+                    <div class="panel-header">
+                        <div>
+                            <h3 class="panel-title">📋 Bảng Chấm Điểm Chi Tiết Hoạt Động (Activity Scorecard)</h3>
+                            <p class="panel-subtitle">Chuyển đổi linh hoạt giữa mọi chiều phân tích có trong file dữ liệu của bạn.</p>
+                        </div>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <select id="scorecard-dim-switcher" class="clean-select" style="width:180px; font-weight:700;" onchange="switchScorecardDimension()"></select>
+                            <input type="text" id="scorecard-search" placeholder="🔍 Tìm kiếm..." class="clean-select" style="width:160px;" oninput="filterScorecard()">
+                            <select id="scorecard-quad-filter" class="clean-select" style="width:170px;" onchange="filterScorecard()">
+                                <option value="ALL">Tất cả ma trận</option>
+                                <option value="🌟 Ngôi sao tăng trưởng">🌟 Ngôi sao tăng trưởng</option>
+                                <option value="🐄 Bò sữa sinh lời">🐄 Bò sữa sinh lời</option>
+                                <option value="⚠️ Bẫy doanh thu ảo">⚠️ Bẫy doanh thu ảo</option>
+                                <option value="🔥 Đốt tiền / Cần cắt lỗ">🔥 Đốt tiền / Cần cắt lỗ</option>
+                            </select>
+                            <select id="scorecard-alert-filter" class="clean-select" style="width:150px;" onchange="filterScorecard()">
+                                <option value="ALL">Tất cả cảnh báo</option>
+                                <option value="🟢 Tối ưu">🟢 Tối ưu</option>
+                                <option value="🟡 Cảnh báo">🟡 Cảnh báo</option>
+                                <option value="🔴 Nguy hiểm">🔴 Nguy hiểm</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive" style="width: 100%; max-width: 100%; overflow-x: auto;">
+                        <table class="bi-table">
+                            <thead>
+                                <tr>
+                                    <th>Nhóm Hoạt Động</th>
+                                    <th>Phân Nhóm Ma Trận</th>
+                                    <th>Mức Cảnh Báo</th>
+                                    <th>Doanh Thu</th>
+                                    <th>Doanh Thu Thực Thu</th>
+                                    <th>Số Đơn / Sản Lượng</th>
+                                    <th>Đơn Hoàn</th>
+                                    <th>Tỷ Lệ Hoàn (%)</th>
+                                    <th>Lượt Truy Cập</th>
+                                    <th>Tỷ Lệ Chuyển Đổi (%)</th>
+                                    <th>Giá Trị TB Đơn (AOV)</th>
+                                    <th>Chi Phí Ads</th>
+                                    <th>Giá Vốn (COGS)</th>
+                                    <th>Chi Phí/Đơn (CAC)</th>
+                                    <th>Tỷ Lệ Chi Phí Ads (CIR %)</th>
+                                    <th>Lợi Nhuận Ròng</th>
+                                    <th>Biên Lợi Nhuận (%)</th>
+                                    <th>Hiệu Quả Ads (ROAS)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="step5-scorecard-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Phân Tích Chéo Đa Chiều (Cross-Pivot) -->
+                <div class="panel-box">
+                    <div class="panel-header">
+                        <div>
+                            <h3 class="panel-title">🔍 Phân Tích Chéo Đa Chiều (Dynamic Cross-Pivot)</h3>
+                            <p class="panel-subtitle">Đánh giá chéo Chiến dịch x Kênh bán, Danh mục x Khu vực hoặc chọn bất kỳ 2 chiều phân tích nào từ file.</p>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <span style="font-size:12px; font-weight:700;">Chiều dòng:</span>
+                            <select id="pivot-row-select" class="clean-select" style="width:150px;"></select>
+                            <span style="font-size:12px; font-weight:700;">× Chiều cột:</span>
+                            <select id="pivot-col-select" class="clean-select" style="width:150px;"></select>
+                            <button class="btn btn-outline" onclick="applyCustomCrossPivot()" style="padding:6px 12px; font-size:12px;">Tạo Pivot Chéo</button>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:8px; margin-bottom:12px;">
+                        <button class="btn btn-primary" id="p-btn-1" onclick="switchPivotTab(1)">Bảng Chéo 1 (Chiều 1 × Chiều 2)</button>
+                        <button class="btn btn-outline" id="p-btn-2" onclick="switchPivotTab(2)">Bảng Chéo 2 (Danh mục × Khu vực)</button>
+                        <button class="btn btn-outline" id="p-btn-3" onclick="switchPivotTab(3)">Nhật Ký Biến Động Theo Thời Gian</button>
+                    </div>
+
+                    <div id="p-content-1" class="table-responsive" style="width: 100%; max-width: 100%; overflow-x: auto;">
+                        <table class="bi-table">
+                            <thead><tr><th>Chiều Phân Tích 1</th><th>Chiều Phân Tích 2</th><th>Doanh Thu</th><th>Thực Thu</th><th>Số Đơn</th><th>Return Rate%</th><th>Chi Phí Ads</th><th>Lợi Nhuận Ròng</th><th>Biên Ròng%</th><th>ROAS</th><th>Cảnh Báo</th></tr></thead>
+                            <tbody id="p-tbody-1"></tbody>
+                        </table>
+                    </div>
+                    <div id="p-content-2" class="table-responsive" style="display:none; width: 100%; max-width: 100%; overflow-x: auto;">
+                        <table class="bi-table">
+                            <thead><tr><th>Danh Mục / SP</th><th>Khu Vực</th><th>Doanh Thu</th><th>Thực Thu</th><th>Số Đơn</th><th>Return Rate%</th><th>Lợi Nhuận Ròng</th><th>Biên Ròng%</th><th>Cảnh Báo</th></tr></thead>
+                            <tbody id="p-tbody-2"></tbody>
+                        </table>
+                    </div>
+                    <div id="p-content-3" class="table-responsive" style="display:none; width: 100%; max-width: 100%; overflow-x: auto;">
+                        <table class="bi-table">
+                            <thead><tr><th>Mốc Thời Gian</th><th>Doanh Thu</th><th>Số Đơn</th><th>Chi Phí Ads</th><th>Lợi Nhuận Ròng</th><th>CIR%</th><th>Chẩn Đoán</th></tr></thead>
+                            <tbody id="p-tbody-3"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Chẩn đoán Nguyên nhân gốc rễ & Kế hoạch hành động (Actionable Playbook) -->
+                <div class="playbook-grid">
+                    <div class="playbook-card highlights">
+                        <div class="playbook-title">🌟 Điểm Sáng Tăng Trưởng (Scale-up)</div>
+                        <div id="playbook-highlights-list"></div>
+                    </div>
+                    <div class="playbook-card bottlenecks">
+                        <div class="playbook-title">⚠️ Điểm Nghẽn Vận Hành (Operational Bottlenecks)</div>
+                        <div id="playbook-bottlenecks-list"></div>
+                    </div>
+                </div>
+
+                <div class="panel-box" style="border-left:4px solid var(--blue);">
+                    <div class="panel-header">
+                        <h4 class="panel-title">🎯 Quyết Định Cắt Lỗ & Tối Ưu Hóa (Cut & Optimize Actionable Playbook)</h4>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button class="btn btn-outline" onclick="exportCleanData('csv')">📥 Xuất CSV Sạch</button>
+                            <button class="btn btn-outline" onclick="exportCleanData('xlsx')">📊 Xuất XLSX Sạch</button>
+                            <button class="btn btn-primary" onclick="exportReportDocx()" style="background:#2563eb; font-weight:700;">📘 Xuất Báo Cáo Word (.DOCX)</button>
+                        </div>
+                    </div>
+                    <div id="playbook-actions-list"></div>
+                </div>
+
+                <!-- AI Chat Assistant -->
+                <div class="ai-chat-box">
+                    <div class="panel-header">
+                        <h3 class="panel-title">🤖 Trợ Lý AI Đa Vai Trò (Chief BI Strategist & Data Engineer)</h3>
+                    </div>
+                    <div class="ai-messages" id="ai-messages-container">
+                        <div class="ai-msg bot">
+                            Hệ thống sẵn sàng hỗ trợ phân tích chuyên sâu trên tập dữ liệu thực tế và bối cảnh doanh nghiệp của bạn.
+                        </div>
+                    </div>
+                    <div class="ai-input-group">
+                        <input type="text" id="ai-prompt-input" class="ai-input" placeholder="Đặt câu hỏi phân tích sâu về dữ liệu vừa tải lên..." onkeydown="if(event.key==='Enter') sendAIChat()">
+                        <button class="btn btn-primary" onclick="sendAIChat()">Gửi</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // =====================================================================
+        // ZERO-DATA INITIALIZATION & MEMORY PURGE ON STARTUP
+        // =====================================================================
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+        } catch (e) {}
+
+        let currentStep = 1;
+        let unlockedStep = 1;
+        let pipelineData = null;
+        let chartInstances = {};
+        let uploadedContextDocName = null;
+        let uploadedContextDocContent = "";
+        let customFormulasList = [];
+
+        const formatNum = (v) => (v === null || v === undefined || isNaN(v)) ? '--' : new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(v);
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadPipeline();
+            setupDragAndDrop();
+        });
+
+        // =====================================================================
+        // HARD RESET: XÓA TRẮNG DỮ LIỆU & TẠO DỰ ÁN MỚI
+        // =====================================================================
+        async function executeHardReset() {
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+            } catch (e) {}
+
+            // Hủy toàn bộ biểu đồ cũ
+            Object.keys(chartInstances).forEach(k => {
+                if (chartInstances[k]) {
+                    chartInstances[k].destroy();
+                    delete chartInstances[k];
+                }
+            });
+
+            // Reset các ô input trên DOM
+            document.getElementById('step1-raw-text').value = '';
+            document.getElementById('context-doc-label').innerText = 'Kéo thả tài liệu bối cảnh hoặc bấm để chọn file';
+            const fInput = document.getElementById('file-uploader');
+            if (fInput) fInput.value = '';
+            const cInput = document.getElementById('context-doc-uploader');
+            if (cInput) cInput.value = '';
+
+            uploadedContextDocName = null;
+            uploadedContextDocContent = "";
+            customFormulasList = [];
+            window._hasAutoExportedDocx = false;
+
+            try {
+                const res = await fetch('/api/hard-reset', { method: 'POST' });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    pipelineData = result.data;
+                    unlockedStep = 1;
+                    currentStep = 1;
+                    renderAllSteps(pipelineData);
+                    goToStep(1);
+                }
+            } catch (e) {
+                console.error("Lỗi Hard Reset:", e);
+            }
+        }
+
+        async function loadPipeline() {
+            try {
+                const res = await fetch('/api/pipeline');
+                const state = await res.json();
+                if (state) {
+                    pipelineData = state;
+                    unlockedStep = state.current_unlocked_step || 1;
+                    customFormulasList = (state.step4 && state.step4.custom_formulas) ? state.step4.custom_formulas : [];
+                    renderAllSteps(state);
+                    updateStepperUI();
+                }
+            } catch (e) {
+                console.error("Lỗi tải trạng thái:", e);
+            }
+        }
+
+        function renderAllSteps(state) {
+            const dot = document.getElementById('nav-status-dot');
+            const badge = document.getElementById('nav-unlocked-status');
+            if (state.is_clean_slate) {
+                dot.className = 'status-dot';
+                badge.innerText = 'Trắng hoàn toàn (Clean Slate - Bước 1/5)';
+            } else {
+                dot.className = 'status-dot active';
+                badge.innerText = `${state.filename || 'Đang thiết lập bối cảnh'} • Mở khóa Bước ${state.current_unlocked_step}/5`;
+            }
+
+            renderStep1(state.step1);
+            renderStep2(state.step2, state.filename);
+            renderStep3(state.step3);
+            renderStep4(state.step4);
+            renderStep5(state.step5);
+        }
+
+        // =====================================================================
+        // STEP NAVIGATION & GATEKEEPING
+        // =====================================================================
+        function tryNavigateStep(step) {
+            if (step > unlockedStep) {
+                const wantUnlock = confirm(`Bước ${step} chưa được mở khóa theo tiến trình tuần tự. Bạn có muốn MỞ KHÓA NHANH để xem và thao tác Bước ${step} ngay không?`);
+                if (wantUnlock) {
+                    unlockedStep = Math.max(unlockedStep, step);
+                    goToStep(step);
+                }
+                return;
+            }
+            goToStep(step);
+        }
+
+        function goToStep(step) {
+            currentStep = step;
+            for (let i = 1; i <= 5; i++) {
+                const view = document.getElementById(`view-step-${i}`);
+                if (view) view.classList.toggle('active', i === step);
+            }
+            updateStepperUI();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const mainEl = document.querySelector('main.content');
+            if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (step === 5 && pipelineData && pipelineData.step5 && pipelineData.step5.has_dashboard) {
+                setTimeout(renderStep5Charts, 100);
+            }
+        }
+
+        function updateStepperUI() {
+            for (let i = 1; i <= 5; i++) {
+                const tab = document.getElementById(`step-tab-${i}`);
+                const div = document.getElementById(`step-div-${i}`);
+                const side = document.getElementById(`side-nav-${i}`);
+
+                const isUnlocked = (i <= unlockedStep);
+                const isActive = (i === currentStep);
+                const isCompleted = (i < unlockedStep);
+
+                if (tab) {
+                    tab.classList.toggle('active', isActive);
+                    tab.classList.toggle('completed', isCompleted);
+                    tab.classList.toggle('locked', !isUnlocked);
+                    const b = tab.querySelector('.step-bubble');
+                    if (b) b.innerHTML = isCompleted ? '✓' : i;
+                }
+                if (div) div.classList.toggle('active', i < unlockedStep);
+                if (side) {
+                    side.classList.toggle('active', isActive);
+                    side.classList.toggle('completed', isCompleted);
+                    side.classList.toggle('locked', !isUnlocked);
+                    const sb = side.querySelector('.step-badge');
+                    if (sb) sb.innerHTML = isCompleted ? '✓' : i;
+                }
+            }
+        }
+
+        function handleGateText(stepNum) {
+            const inp = document.getElementById(`gate-input-${stepNum}`);
+            if (!inp) return;
+            const val = inp.value.trim().toLowerCase();
+            if (['xác nhận', 'xac nhan', 'tiếp tục', 'tiep tuc', 'đúng', 'dung', 'ok', 'yes', 'đồng ý'].some(k => val.includes(k))) {
+                inp.value = '';
+                if (stepNum === 1) confirmStep1();
+                else if (stepNum === 2) confirmStep2();
+                else if (stepNum === 3) confirmStep3();
+                else if (stepNum === 4) confirmStep4();
+            } else {
+                alert("Để qua Trạm kiểm soát, vui lòng gõ 'Xác nhận' hoặc 'Tiếp tục', hoặc bấm vào nút Xác nhận.");
+            }
+        }
+
+        // =====================================================================
+        // BƯỚC 1: CONTEXT INGESTION & VALIDATION
+        // =====================================================================
+        function handleContextDocUpload(event) {
+            const file = event.target.files[0];
+            if (file) handleContextDocFile(file);
+        }
+
+        function handleContextDocFile(file) {
+            uploadedContextDocName = file.name;
+            const lbl = document.getElementById('context-doc-label');
+            if (lbl) lbl.innerText = `Đã đính kèm: ${file.name}`;
+
+            const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+            const reader = new FileReader();
+            if (['.txt', '.md', '.json', '.csv'].includes(ext)) {
+                reader.onload = (e) => {
+                    uploadedContextDocContent = e.target.result;
+                };
+                reader.readAsText(file);
+            } else {
+                reader.onload = (e) => {
+                    const bytes = new Uint8Array(e.target.result);
+                    const decoder = new TextDecoder('utf-8', { fatal: false });
+                    const rawStr = decoder.decode(bytes);
+                    const xmlMatches = rawStr.match(/<w:t[^>]*>([^<]+)<\/w:t>|<a:t[^>]*>([^<]+)<\/a:t>/g);
+                    if (xmlMatches && xmlMatches.length > 0) {
+                        uploadedContextDocContent = xmlMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ');
+                    } else {
+                        uploadedContextDocContent = `Tài liệu nội bộ: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function loadSampleStep1() {
+            document.getElementById('step1-raw-text').value = "Doanh nghiệp thời trang trực tuyến B2C (thương hiệu UrbanStyle). Mô hình bán lẻ số đa kênh qua TikTok Shop, Facebook Ads, Shopee và Zalo OA. Quy mô: 5.000 đơn hàng/tháng, doanh thu trung bình 300 triệu VNĐ/tháng. Mục tiêu phân tích cốt lõi: Phân tích hiệu quả kinh doanh các kênh, tìm nguyên nhân tỷ lệ hoàn đơn hàng cao ở một số kênh bán, đánh giá ROAS và đóng góp lợi nhuận ròng sau khi trừ chi phí ads và giá vốn hàng bán (COGS).";
+            analyzeStep1Context();
+        }
+
+        async function skipToStep2() {
+            if (!document.getElementById('step1-raw-text').value.trim()) {
+                document.getElementById('step1-raw-text').value = "Doanh nghiệp kinh doanh bán lẻ số đa kênh (E-commerce / B2C).";
+            }
+            await analyzeStep1Context();
+            await confirmStep1();
+        }
+
+        async function analyzeStep1Context() {
+            const rawText = document.getElementById('step1-raw-text').value.trim();
+            if (!rawText && !uploadedContextDocContent) {
+                alert("Vui lòng nhập mô tả bối cảnh doanh nghiệp hoặc tải lên tài liệu nội bộ trước khi phân tích!");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/step1-analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        raw_text: rawText,
+                        doc_filename: uploadedContextDocName,
+                        doc_content: uploadedContextDocContent
+                    })
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    pipelineData = result.data;
+                    unlockedStep = pipelineData.current_unlocked_step;
+                    renderAllSteps(pipelineData);
+                    updateStepperUI();
+                } else {
+                    alert(result.message || "Lỗi phân tích bối cảnh.");
+                }
+            } catch (e) {
+                console.error("Lỗi phân tích Bước 1:", e);
+            }
+        }
+
+        function renderStep1(step1) {
+            const panel = document.getElementById('step1-profile-panel');
+            const emptyBanner = document.getElementById('step1-empty-banner');
+            if (!step1 || !step1.has_context || !step1.business_profile) {
+                if (panel) panel.style.display = 'none';
+                if (emptyBanner) emptyBanner.style.display = 'block';
+                return;
+            }
+
+            if (panel) panel.style.display = 'block';
+            if (emptyBanner) emptyBanner.style.display = 'none';
+
+            const prof = step1.business_profile;
+            document.getElementById('disp-source-summary').innerText = prof.source_summary || '';
+            document.getElementById('disp-company-overview').innerText = prof.company_overview || '';
+            document.getElementById('disp-primary-goal').innerText = prof.primary_goal || '';
+            document.getElementById('disp-data-constraints').innerText = prof.data_constraints || '';
+
+            const qList = document.getElementById('disp-key-questions');
+            if (qList) {
+                qList.innerHTML = (prof.key_questions || []).map(q => `<li>${q}</li>`).join('');
+            }
+
+            // Điền vào khung chỉnh sửa
+            document.getElementById('edit-company-overview').value = prof.company_overview || '';
+            document.getElementById('edit-primary-goal').value = prof.primary_goal || '';
+            document.getElementById('edit-key-questions').value = (prof.key_questions || []).join('\n');
+            document.getElementById('edit-data-constraints').value = prof.data_constraints || '';
+        }
+
+        function toggleManualEditStep1() {
+            const box = document.getElementById('step1-manual-edit-box');
+            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function saveEditedStep1Profile() {
+            const edited = {
+                company_overview: document.getElementById('edit-company-overview').value.trim(),
+                primary_goal: document.getElementById('edit-primary-goal').value.trim(),
+                key_questions: document.getElementById('edit-key-questions').value.split('\n').filter(x => x.trim()),
+                data_constraints: document.getElementById('edit-data-constraints').value.trim()
+            };
+
+            const res = await fetch('/api/step1-analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    raw_text: document.getElementById('step1-raw-text').value,
+                    doc_filename: uploadedContextDocName,
+                    business_profile: edited
+                })
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                pipelineData = result.data;
+                renderStep1(pipelineData.step1);
+                document.getElementById('step1-manual-edit-box').style.display = 'none';
+            }
+        }
+
+        async function confirmStep1() {
+            const res = await fetch('/api/step1-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const result = await res.json();
+            if (result.status === 'success') {
+                pipelineData = result.data;
+                unlockedStep = pipelineData.current_unlocked_step;
+                renderAllSteps(pipelineData);
+                goToStep(2);
+            } else {
+                alert(result.message);
+            }
+        }
+
+        // =====================================================================
+        // BƯỚC 2: DYNAMIC FILE UPLOAD & DATA PROFILING
+        // =====================================================================
+        function setupDragAndDrop() {
+            // Dropzone Bước 2 (Dữ liệu bảng)
+            const dropzone = document.getElementById('dropzone');
+            if (dropzone) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => {
+                    dropzone.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+                });
+                ['dragenter', 'dragover'].forEach(ev => dropzone.addEventListener(ev, () => dropzone.classList.add('dragover'), false));
+                ['dragleave', 'drop'].forEach(ev => dropzone.addEventListener(ev, () => dropzone.classList.remove('dragover'), false));
+                dropzone.addEventListener('drop', (e) => {
+                    const files = e.dataTransfer.files;
+                    if (files && files.length > 0) processDataFile(files[0]);
+                });
+            }
+
+            // Dropzone Bước 1 (Tài liệu bối cảnh)
+            const ctxDropzone = document.getElementById('context-dropzone');
+            if (ctxDropzone) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => {
+                    ctxDropzone.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+                });
+                ['dragenter', 'dragover'].forEach(ev => ctxDropzone.addEventListener(ev, () => ctxDropzone.classList.add('dragover'), false));
+                ['dragleave', 'drop'].forEach(ev => ctxDropzone.addEventListener(ev, () => ctxDropzone.classList.remove('dragover'), false));
+                ctxDropzone.addEventListener('drop', (e) => {
+                    const files = e.dataTransfer.files;
+                    if (files && files.length > 0) handleContextDocFile(files[0]);
+                });
+            }
+        }
+
+        function loadSampleStep2Data() {
+            const channels = ['TikTok Shop', 'Facebook Ads', 'Shopee', 'Zalo OA'];
+            const campaigns = ['Summer Mega Sale', 'Flash Deal 50%', 'BST Mới Thu Đông', 'Remarketing Khách Cũ'];
+            const categories = ['Áo Thun Cotton', 'Đầm Váy Thiết Kế', 'Quần Jean Slimfit', 'Phụ Kiện Thời Trang'];
+            const regions = ['Miền Bắc', 'Miền Trung', 'Miền Nam'];
+
+            const sampleRows = [];
+            const startDate = new Date(2025, 6, 1); // 01/07/2025
+
+            for (let i = 0; i < 200; i++) {
+                const curDate = new Date(startDate.getTime() + (i % 30) * 86400000);
+                const dateStr = curDate.toISOString().split('T')[0];
+                const ch = channels[i % channels.length];
+                const camp = campaigns[i % campaigns.length];
+                const cat = categories[i % categories.length];
+                const reg = regions[i % regions.length];
+
+                const orders = Math.floor(Math.random() * 40) + 10;
+                const unitPrice = [180000, 250000, 320000, 450000][i % 4];
+                const revenue = orders * unitPrice;
+                const adRate = ch === 'TikTok Shop' ? 0.22 : ch === 'Facebook Ads' ? 0.28 : ch === 'Shopee' ? 0.15 : 0.12;
+                const cost = Math.round(revenue * adRate);
+                const cogs = Math.round(revenue * 0.40);
+                const returned = Math.floor(orders * (ch === 'TikTok Shop' ? 0.08 : 0.04));
+
+                sampleRows.push({
+                    "Ngày": dateStr,
+                    "Kênh Bán": ch,
+                    "Chiến Dịch": camp,
+                    "Ngành Hàng": cat,
+                    "Khu Vực": reg,
+                    "Số Lượng Đơn": orders,
+                    "Doanh Thu (VNĐ)": revenue,
+                    "Chi Phí Ads (VNĐ)": cost,
+                    "Giá Vốn COGS (VNĐ)": cogs,
+                    "Đơn Hoàn Trả": returned
+                });
+            }
+
+            // Thêm 2 dòng trùng lặp và 2 dòng trống để test tính năng làm sạch dữ liệu
+            sampleRows.push({ ...sampleRows[0] });
+            sampleRows.push({ ...sampleRows[1] });
+            sampleRows[10]["Chi Phí Ads (VNĐ)"] = ""; // Missing value
+
+            uploadDataRows("Du_Lieu_Ban_Hang_Da_Kenh_Mau.xlsx", sampleRows);
+        }
+
+        function handleDataFileSelected(event) {
+            const file = event.target.files[0];
+            if (file) processDataFile(file);
+        }
+
+        function processDataFile(file) {
+            const fname = file.name.toLowerCase();
+            const ext = fname.substring(fname.lastIndexOf('.'));
+
+            if (ext === '.csv') {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => uploadDataRows(file.name, results.data)
+                });
+            } else if (ext === '.xlsx' || ext === '.xls') {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.SheetNames[0];
+                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: "" });
+                    uploadDataRows(file.name, rows);
+                };
+                reader.readAsArrayBuffer(file);
+            } else if (ext === '.json') {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        const rows = Array.isArray(parsed) ? parsed : (parsed.data || parsed.rows || [parsed]);
+                        uploadDataRows(file.name, rows);
+                    } catch (err) {
+                        alert("File JSON không hợp lệ.");
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                alert("Vui lòng chọn file định dạng .xlsx, .xls, .csv hoặc .json");
+            }
+        }
+
+        async function uploadDataRows(filename, rows) {
+            if (!rows || rows.length === 0) {
+                alert("File tải lên không có dữ liệu.");
+                return;
+            }
+            try {
+                const res = await fetch('/api/step2-upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename, rows })
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    pipelineData = result.data;
+                    unlockedStep = pipelineData.current_unlocked_step;
+                    renderAllSteps(pipelineData);
+                    updateStepperUI();
+                } else {
+                    alert(result.message);
+                }
+            } catch (e) {
+                console.error("Lỗi upload file:", e);
+            }
+        }
+
+        function renderStep2(step2, filename) {
+            const container = document.getElementById('step2-results-container');
+            const emptyBanner = document.getElementById('step2-empty-banner');
+            const healthBadge = document.getElementById('step2-health-badge');
+
+            if (!step2 || !step2.has_data) {
+                if (container) container.style.display = 'none';
+                if (emptyBanner) emptyBanner.style.display = 'block';
+                if (healthBadge) {
+                    healthBadge.innerText = 'Chưa tải file dữ liệu';
+                    healthBadge.className = 'badge yellow-alert';
+                }
+                return;
+            }
+
+            if (container) container.style.display = 'block';
+            if (emptyBanner) emptyBanner.style.display = 'none';
+            document.getElementById('step2-file-info').innerText = `File đang nạp: ${filename || ''} (${step2.total_rows} dòng × ${step2.total_cols} cột)`;
+
+            const h = step2.health_summary || {};
+            document.getElementById('h-total-rows').innerText = formatNum(step2.total_rows);
+            document.getElementById('h-total-cols').innerText = formatNum(step2.total_cols);
+            document.getElementById('h-missing-cells').innerText = formatNum(h.total_missing_cells);
+            document.getElementById('h-duplicate-rows').innerText = formatNum(h.duplicate_rows);
+            document.getElementById('h-format-errors').innerText = formatNum(h.format_errors);
+            document.getElementById('h-logic-anomalies').innerText = formatNum(h.logic_anomalies);
+
+            if (healthBadge) {
+                healthBadge.innerText = `Điểm chất lượng: ${h.health_score}% • ${h.health_status}`;
+                healthBadge.className = 'badge ' + (h.health_score >= 85 ? 'green-alert' : (h.health_score >= 55 ? 'yellow-alert' : 'red-alert'));
+            }
+
+            const tbody = document.getElementById('step2-profiling-tbody');
+            if (tbody) {
+                tbody.innerHTML = (step2.columns_profiling || []).map(c => `
+                    <tr>
+                        <td><strong>${c.column}</strong></td>
+                        <td><span class="badge ${c.type.includes('Metric') ? 'badge-metric' : (c.type.includes('Date') ? 'badge-date' : 'badge-dim')}">${c.type}</span></td>
+                        <td style="${c.missing_count > 0 ? 'color:#dc2626; font-weight:800;' : ''}">${c.missing_count}</td>
+                        <td>${c.missing_pct}%</td>
+                        <td style="${c.format_errors > 0 ? 'color:#d97706; font-weight:800;' : ''}">${c.format_errors}</td>
+                        <td style="${c.anomalies > 0 ? 'color:#7c3aed; font-weight:800;' : ''}">${c.anomalies}</td>
+                        <td style="color:#64748b; font-size:11px;">${(c.samples || []).join(' | ')}</td>
+                    </tr>
+                `).join('');
+            }
+
+            const cols = step2.preview_columns || [];
+            document.getElementById('step2-raw-thead').innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+            document.getElementById('step2-raw-tbody').innerHTML = (step2.preview_rows || []).map(row => {
+                const tds = cols.map(c => {
+                    const cell = row[c] || { val: '', is_error: false };
+                    let cls = '';
+                    let badge = '';
+                    if (cell.is_error) {
+                        if (cell.error_type === 'missing') { cls = 'cell-missing'; badge = '<span class="cell-badge-err">Null</span>'; }
+                        else if (cell.error_type === 'format') { cls = 'cell-format'; badge = '<span class="cell-badge-err">Format</span>'; }
+                        else if (cell.error_type === 'anomaly') { cls = 'cell-anomaly'; badge = '<span class="cell-badge-err">Outlier/Logic</span>'; }
+                    }
+                    return `<td class="${cls}" title="${cell.error_msg || ''}">${cell.val !== '' ? cell.val : '<i>(Trống)</i>'}${badge}</td>`;
+                }).join('');
+                return `<tr>${tds}</tr>`;
+            }).join('');
+        }
+
+        async function confirmStep2() {
+            const res = await fetch('/api/step2-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const result = await res.json();
+            if (result.status === 'success') {
+                pipelineData = result.data;
+                unlockedStep = pipelineData.current_unlocked_step;
+                renderAllSteps(pipelineData);
+                goToStep(3);
+            } else {
+                alert(result.message);
+            }
+        }
+
+        // =====================================================================
+        // BƯỚC 3: DATA CLEANING & BEFORE-AFTER LOG
+        // =====================================================================
+        function renderStep3(step3) {
+            if (!step3 || !step3.has_cleaned) return;
+            const sum = step3.summary || {};
+            document.getElementById('log-rows-before').innerText = formatNum(sum.rows_before);
+            document.getElementById('log-rows-after').innerText = formatNum(sum.rows_after);
+            document.getElementById('log-cells-filled').innerText = formatNum(sum.cells_filled);
+            document.getElementById('log-dups-removed').innerText = formatNum(sum.duplicates_removed);
+            document.getElementById('log-outliers-treated').innerText = formatNum(sum.outliers_treated);
+
+            const statsTbody = document.getElementById('step3-stats-tbody');
+            if (statsTbody) {
+                statsTbody.innerHTML = (step3.stats_comparison || []).map(s => `
+                    <tr>
+                        <td><strong>${s.column}</strong></td>
+                        <td>${formatNum(s.count_before)} ➔ <strong>${formatNum(s.count_after)}</strong></td>
+                        <td>${formatNum(s.mean_before)} ➔ <strong style="color:#059669;">${formatNum(s.mean_after)}</strong></td>
+                        <td>${formatNum(s.median_before)} ➔ <strong style="color:#059669;">${formatNum(s.median_after)}</strong></td>
+                        <td>${formatNum(s.min_before)} ➔ <strong style="color:#059669;">${formatNum(s.min_after)}</strong></td>
+                        <td>${formatNum(s.max_before)} ➔ <strong style="color:#059669;">${formatNum(s.max_after)}</strong></td>
+                        <td>${formatNum(s.std_before)} ➔ <strong style="color:#059669;">${formatNum(s.std_after)}</strong></td>
+                    </tr>
+                `).join('');
+            }
+
+            const cols = step3.preview_columns || [];
+            document.getElementById('step3-clean-thead').innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+            document.getElementById('step3-clean-tbody').innerHTML = (step3.preview_rows || []).map(r => `
+                <tr>${cols.map(c => `<td>${r[c] !== undefined && r[c] !== null ? r[c] : ''}</td>`).join('')}</tr>
+            `).join('');
+        }
+
+        async function applyCleaning(isAuto) {
+            const options = {
+                missing_numeric: isAuto ? 'median' : document.getElementById('clean-numeric-select').value,
+                missing_cat: isAuto ? 'unknown' : document.getElementById('clean-cat-select').value,
+                deduplicate: isAuto ? true : document.getElementById('clean-dedup-check').checked,
+                standardize_format: true,
+                handle_outliers: isAuto ? 'cap' : document.getElementById('clean-outlier-select').value
+            };
+
+            const res = await fetch('/api/step3-clean', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ options })
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                pipelineData = result.data;
+                renderAllSteps(pipelineData);
+            }
+        }
+
+        async function confirmStep3() {
+            const res = await fetch('/api/step3-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const result = await res.json();
+            if (result.status === 'success') {
+                pipelineData = result.data;
+                unlockedStep = pipelineData.current_unlocked_step;
+                renderAllSteps(pipelineData);
+                goToStep(4);
+            } else {
+                alert(result.message);
+            }
+        }
+
+        // =====================================================================
+        // BƯỚC 4: DYNAMIC COLUMN MAPPING & CUSTOM FORMULA BUILDER
+        // =====================================================================
+        let currentStep4Data = null;
+        let step4ActiveMode = 'group'; // 'group' hoặc 'row'
+        let step4ActiveDim = null;
+
+        function switchStep4ViewMode(mode) {
+            step4ActiveMode = mode;
+            renderStep4Table();
+        }
+
+        function changeStep4GroupDim(dim) {
+            step4ActiveDim = dim;
+            renderStep4Table();
+        }
+
+        function renderStep4(step4) {
+            if (!step4 || !step4.has_processed) return;
+            currentStep4Data = step4;
+
+            const mapping = step4.mapping_used || {};
+            const baseCols = step4.available_columns || [];
+
+            const mapFields = [
+                { id: 'map-date', key: 'date' },
+                { id: 'map-channel', key: 'channel' },
+                { id: 'map-campaign', key: 'campaign' },
+                { id: 'map-category', key: 'category' },
+                { id: 'map-region', key: 'region' },
+                { id: 'map-revenue', key: 'revenue' },
+                { id: 'map-unit-price', key: 'unit_price' },
+                { id: 'map-quantity', key: 'quantity' },
+                { id: 'map-cost', key: 'cost' },
+                { id: 'map-cogs', key: 'cogs' },
+                { id: 'map-profit', key: 'profit' },
+                { id: 'map-traffic', key: 'traffic' },
+                { id: 'map-returned', key: 'returned_orders' }
+            ];
+
+            // Danh sách cột để chọn bao gồm cả các cột gốc trong file + cột công thức do người dùng tạo
+            const selectableCols = [...new Set([...baseCols, ...(customFormulasList.map(f => f.name))])];
+
+            mapFields.forEach(f => {
+                const el = document.getElementById(f.id);
+                if (el) {
+                    el.innerHTML = `<option value="">-- Không dùng / Không có trong file --</option>` +
+                        selectableCols.map(c => `<option value="${c}" ${c === mapping[f.key] ? 'selected' : ''}>${c}</option>`).join('');
+                }
+            });
+
+            // Hiển thị chip tên cột để bấm chèn nhanh vào Custom Formula Builder
+            const chipBox = document.getElementById('available-col-chips');
+            if (chipBox) {
+                chipBox.innerHTML = baseCols.map(c => `<span class="col-chip" onclick="insertColToFormula('${c}')">[${c}]</span>`).join('');
+            }
+
+            renderActiveCustomFormulas();
+
+            const qc = step4.quadrant_counts || {};
+            document.getElementById('step4-count-star').innerText = qc['🌟 Ngôi sao tăng trưởng'] || qc['Star'] || 0;
+            document.getElementById('step4-count-cow').innerText = qc['🐄 Bò sữa sinh lời'] || qc['Cash Cow'] || 0;
+            document.getElementById('step4-count-trap').innerText = qc['⚠️ Bẫy doanh thu ảo'] || qc['Volume Trap'] || 0;
+            document.getElementById('step4-count-burner').innerText = qc['🔥 Đốt tiền / Cần cắt lỗ'] || qc['Cash Burner'] || 0;
+
+            document.getElementById('formulas-container').innerHTML = (step4.feature_formulas || []).map(f => `
+                <div class="formula-card">
+                    <div class="formula-name">${f.name}</div>
+                    <div class="formula-code">${f.formula}</div>
+                    <div class="formula-desc">${f.desc}</div>
+                </div>
+            `).join('');
+
+            // Cập nhật bộ chọn chiều phân tích cho chế độ Group-by
+            const summaries = step4.grouped_summaries || {};
+            const availableDims = (step4.available_dimensions && step4.available_dimensions.length > 0)
+                ? step4.available_dimensions
+                : Object.keys(summaries);
+
+            const dimSelect = document.getElementById('step4-group-dim-select');
+            if (dimSelect) {
+                if (availableDims.length > 0) {
+                    dimSelect.innerHTML = availableDims.map(d => `<option value="${d}">${d}</option>`).join('');
+                    if (!step4ActiveDim || !availableDims.includes(step4ActiveDim)) {
+                        step4ActiveDim = availableDims[0];
+                    }
+                    dimSelect.value = step4ActiveDim;
+                } else {
+                    dimSelect.innerHTML = `<option value="">(Không có cột phân nhóm)</option>`;
+                    step4ActiveMode = 'row';
+                    const rRow = document.getElementById('step4-mode-row');
+                    if (rRow) rRow.checked = true;
+                }
+            }
+
+            renderStep4Table();
+        }
+
+        function renderStep4Table() {
+            if (!currentStep4Data) return;
+            const summaries = currentStep4Data.grouped_summaries || {};
+            const hasGroupData = step4ActiveDim && summaries[step4ActiveDim] && summaries[step4ActiveDim].rows && summaries[step4ActiveDim].rows.length > 0;
+            const dimWrap = document.getElementById('step4-dim-selector-wrap');
+
+            let cols = [];
+            let rows = [];
+
+            if (step4ActiveMode === 'group' && hasGroupData) {
+                if (dimWrap) dimWrap.style.display = 'flex';
+                cols = summaries[step4ActiveDim].columns || [];
+                rows = summaries[step4ActiveDim].rows || [];
+            } else {
+                if (dimWrap) dimWrap.style.display = (step4ActiveMode === 'group') ? 'flex' : 'none';
+                cols = currentStep4Data.preview_columns || [];
+                rows = currentStep4Data.preview_rows || [];
+            }
+
+            const thead = document.getElementById('step4-processed-thead');
+            const tbody = document.getElementById('step4-processed-tbody');
+            if (thead) thead.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+            if (tbody) {
+                tbody.innerHTML = rows.map(r => `
+                    <tr>${cols.map(c => {
+                        let val = r[c] !== undefined && r[c] !== null ? r[c] : '';
+                        const strVal = String(val);
+                        if (c === 'Phân nhóm Ma trận' || c === 'quadrant') {
+                            const qClass = strVal.includes('Ngôi sao') || strVal === 'Star' ? 'star' :
+                                (strVal.includes('Bò sữa') || strVal === 'Cash Cow' ? 'cow' :
+                                (strVal.includes('Bẫy') || strVal === 'Volume Trap' ? 'trap' : 'burner'));
+                            val = `<span class="badge ${qClass}">${val}</span>`;
+                        } else if (c === 'Mức cảnh báo' || c === 'alert') {
+                            const aClass = strVal.includes('Nguy hiểm') || strVal === 'RED' ? 'red-alert' :
+                                (strVal.includes('Cảnh báo') || strVal === 'YELLOW' ? 'yellow-alert' : 'green-alert');
+                            val = `<span class="badge ${aClass}">${val}</span>`;
+                        } else if (typeof val === 'number') {
+                            if (c.includes('(%)') || c.includes('CIR') || c.includes('CR')) {
+                                val = `${formatNum(val)}%`;
+                            } else {
+                                val = formatNum(val);
+                            }
+                        }
+                        return `<td>${val}</td>`;
+                    }).join('')}</tr>
+                `).join('');
+            }
+        }
+
+        function insertColToFormula(colName) {
+            const inp = document.getElementById('custom-col-expr');
+            inp.value = inp.value + `[${colName}] `;
+            inp.focus();
+        }
+
+        function renderActiveCustomFormulas() {
+            const box = document.getElementById('active-custom-formulas');
+            if (!box) return;
+            box.innerHTML = customFormulasList.map((f, idx) => `
+                <span class="badge cow" style="font-size:11.5px; padding:5px 10px;">
+                    <strong>${f.name}</strong> = ${f.formula}
+                    <span style="cursor:pointer; margin-left:6px; color:#dc2626;" onclick="removeCustomFormula(${idx})">✕</span>
+                </span>
+            `).join('');
+        }
+
+        async function addCustomFormula() {
+            const name = document.getElementById('custom-col-name').value.trim().replace(/\s+/g, '_');
+            const formula = document.getElementById('custom-col-expr').value.trim();
+            if (!name || !formula) {
+                alert("Vui lòng nhập Tên cột mới và Công thức tính!");
+                return;
+            }
+            customFormulasList.push({ name, formula });
+            document.getElementById('custom-col-name').value = '';
+            document.getElementById('custom-col-expr').value = '';
+            await runStep4Processing();
+        }
+
+        async function removeCustomFormula(idx) {
+            customFormulasList.splice(idx, 1);
+            await runStep4Processing();
+        }
+
+        async function runStep4Processing() {
+            const customMapping = {
+                date: document.getElementById('map-date')?.value || null,
+                channel: document.getElementById('map-channel')?.value || null,
+                campaign: document.getElementById('map-campaign')?.value || null,
+                category: document.getElementById('map-category')?.value || null,
+                region: document.getElementById('map-region')?.value || null,
+                revenue: document.getElementById('map-revenue')?.value || null,
+                unit_price: document.getElementById('map-unit-price')?.value || null,
+                quantity: document.getElementById('map-quantity')?.value || null,
+                cost: document.getElementById('map-cost')?.value || null,
+                cogs: document.getElementById('map-cogs')?.value || null,
+                profit: document.getElementById('map-profit')?.value || null,
+                traffic: document.getElementById('map-traffic')?.value || null,
+                returned_orders: document.getElementById('map-returned')?.value || null
+            };
+
+            const res = await fetch('/api/step4-process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mapping: customMapping,
+                    custom_formulas: customFormulasList
+                })
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                pipelineData = result.data;
+                renderAllSteps(pipelineData);
+            }
+        }
+
+        async function confirmStep4() {
+            const res = await fetch('/api/step4-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const result = await res.json();
+            if (result.status === 'success') {
+                pipelineData = result.data;
+                unlockedStep = 5;
+                renderAllSteps(pipelineData);
+                goToStep(5);
+            } else {
+                alert(result.message);
+            }
+        }
+
+        // =====================================================================
+        // BƯỚC 5: INTERACTIVE DASHBOARD, SCORECARD & PLAYBOOK
+        // =====================================================================
+        function renderStep5(step5) {
+            if (!step5 || !step5.has_dashboard) return;
+
+            const kpis = step5.kpis || {};
+            document.getElementById('kpi-total-revenue').innerText = formatNum(kpis.total_revenue);
+            document.getElementById('kpi-net-revenue').innerText = formatNum(kpis.net_realized_revenue);
+            document.getElementById('kpi-return-rate').innerText = `${kpis.system_return_rate || 0}%`;
+            document.getElementById('kpi-returned-count').innerText = formatNum(kpis.total_returned);
+            document.getElementById('kpi-total-orders').innerText = formatNum(kpis.total_orders);
+            document.getElementById('kpi-aov').innerText = formatNum(kpis.aov);
+            document.getElementById('kpi-cr').innerText = `${kpis.system_cr || 0}%`;
+            document.getElementById('kpi-roas').innerText = `${kpis.roas || 0}x`;
+            document.getElementById('kpi-total-cost').innerText = formatNum(kpis.total_cost);
+            document.getElementById('kpi-cir').innerText = `${kpis.cir_percent || 0}%`;
+            document.getElementById('kpi-net-profit').innerText = formatNum(kpis.net_profit);
+            document.getElementById('kpi-net-margin').innerText = `${kpis.net_margin_percent || 0}%`;
+            document.getElementById('kpi-total-cogs').innerText = formatNum(kpis.total_cogs);
+
+            const alertBadge = document.getElementById('system-alert-badge');
+            if (alertBadge) {
+                const a = kpis.system_alert || 'GREEN';
+                alertBadge.innerText = a === 'RED' ? '🔴 CẢNH BÁO ĐỎ (NGUY HIỂM)' : (a === 'YELLOW' ? '🟡 CẢNH BÁO VÀNG' : '🟢 HỆ THỐNG TỐI ƯU (XANH)');
+                alertBadge.className = 'badge ' + (a === 'RED' ? 'red-alert' : (a === 'YELLOW' ? 'yellow-alert' : 'green-alert'));
+            }
+
+            const qc = step5.quadrant_counts || {};
+            document.getElementById('kpi-count-star').innerText = qc['Star'] || 0;
+            document.getElementById('kpi-count-cow').innerText = qc['Cash Cow'] || 0;
+            document.getElementById('kpi-count-trap').innerText = qc['Volume Trap'] || 0;
+            document.getElementById('kpi-count-burner').innerText = qc['Cash Burner'] || 0;
+
+            // Tự động tải về Báo cáo Quản trị Word nếu tùy chọn được kích hoạt
+            const autoDown = document.getElementById('auto-download-docx');
+            if (autoDown && autoDown.checked && !window._hasAutoExportedDocx) {
+                window._hasAutoExportedDocx = true;
+                setTimeout(() => {
+                    exportReportDocx();
+                }, 1200);
+            }
+
+            // Render bộ lọc động theo các cột thực tế trong file
+            const filterBox = document.getElementById('step5-dynamic-filters');
+            const filterOpts = step5.filter_options || {};
+            if (filterBox && filterBox.children.length === 0) {
+                filterBox.innerHTML = Object.keys(filterOpts).map(dimCol => `
+                    <select class="clean-select dyn-filter-select" data-col="${dimCol}" style="min-width:140px; flex:1;" onchange="applyDashboardFilters()">
+                        <option value="ALL">Tất cả [${dimCol}]</option>
+                        ${(filterOpts[dimCol] || []).map(v => `<option value="${v}">${v}</option>`).join('')}
+                    </select>
+                `).join('') + `<button class="btn btn-outline" style="padding:6px 12px; font-size:12px;" onclick="resetDashboardFilters()">Bỏ lọc</button>`;
+            }
+
+            // Populate Scorecard Dimension Switcher & Pivot Selectors
+            const dims = step5.available_dimensions || [];
+            const scSwitcher = document.getElementById('scorecard-dim-switcher');
+            if (scSwitcher && dims.length > 0) {
+                const curVal = scSwitcher.value || step5.primary_dimension || dims[0];
+                scSwitcher.innerHTML = dims.map(d => `<option value="${d}" ${d === curVal ? 'selected' : ''}>Chiều: ${d}</option>`).join('');
+            }
+
+            const pRow = document.getElementById('pivot-row-select');
+            const pCol = document.getElementById('pivot-col-select');
+            if (pRow && pCol && dims.length > 0 && pRow.options.length === 0) {
+                const meta = step5.pivot_meta || {};
+                pRow.innerHTML = dims.map(d => `<option value="${d}" ${d === meta.p1_row ? 'selected' : ''}>${d}</option>`).join('');
+                pCol.innerHTML = dims.map(d => `<option value="${d}" ${d === meta.p1_col ? 'selected' : ''}>${d}</option>`).join('');
+            }
+
+            renderScorecardTable(step5.scorecard || []);
+            renderPivots(step5);
+            renderPlaybook(step5.playbook || {});
+        }
+
+        async function applyDashboardFilters() {
+            const selects = document.querySelectorAll('.dyn-filter-select');
+            const filters = {};
+            selects.forEach(s => {
+                filters[s.getAttribute('data-col')] = s.value;
+            });
+
+            const res = await fetch('/api/step5-filter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filters })
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                pipelineData = result.data;
+                renderStep5(pipelineData.step5);
+                renderStep5Charts();
+            }
+        }
+
+        function resetDashboardFilters() {
+            document.querySelectorAll('.dyn-filter-select').forEach(s => s.value = 'ALL');
+            applyDashboardFilters();
+        }
+
+        function switchScorecardDimension() {
+            if (!pipelineData || !pipelineData.step5) return;
+            const dim = document.getElementById('scorecard-dim-switcher').value;
+            const list = (pipelineData.step5.scorecards_by_dim || {})[dim] || [];
+            renderScorecardTable(list);
+        }
+
+        function renderScorecardTable(items) {
+            const tbody = document.getElementById('step5-scorecard-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = items.map(s => {
+                const q = String(s.quadrant || '');
+                const qClass = (q.includes('Ngôi sao') || q === 'Star') ? 'star' :
+                    ((q.includes('Bò sữa') || q === 'Cash Cow') ? 'cow' :
+                    ((q.includes('Bẫy') || q === 'Volume Trap') ? 'trap' : 'burner'));
+                const a = String(s.alert || '');
+                const aClass = (a.includes('Nguy hiểm') || a === 'RED') ? 'red-alert' :
+                    ((a.includes('Cảnh báo') || a === 'YELLOW') ? 'yellow-alert' : 'green-alert');
+                return `
+                    <tr>
+                        <td><strong>${s.name}</strong></td>
+                        <td><span class="badge ${qClass}">${s.quadrant}</span></td>
+                        <td><span class="badge ${aClass}">${s.alert}</span></td>
+                        <td>${formatNum(s.revenue)}</td>
+                        <td style="color:#059669; font-weight:700;">${formatNum(s.net_realized_revenue)}</td>
+                        <td>${formatNum(s.orders)}</td>
+                        <td style="${s.returned_orders > 0 ? 'color:#dc2626;' : ''}">${formatNum(s.returned_orders)}</td>
+                        <td style="${s.return_rate > 15 ? 'color:#dc2626; font-weight:700;' : ''}">${s.return_rate}%</td>
+                        <td>${formatNum(s.traffic)}</td>
+                        <td>${s.cr_percent}%</td>
+                        <td>${formatNum(s.aov)}</td>
+                        <td>${formatNum(s.ad_spend)}</td>
+                        <td>${formatNum(s.cogs)}</td>
+                        <td>${formatNum(s.cpa)}</td>
+                        <td>${s.cir_percent}%</td>
+                        <td style="${s.net_profit < 0 ? 'color:#dc2626; font-weight:700;' : 'color:#059669; font-weight:700;'}">${formatNum(s.net_profit)}</td>
+                        <td>${s.net_margin_percent}%</td>
+                        <td><strong style="color:#0284c7;">${s.roas}x</strong></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterScorecard() {
+            if (!pipelineData || !pipelineData.step5) return;
+            const dim = document.getElementById('scorecard-dim-switcher').value;
+            const allItems = ((pipelineData.step5.scorecards_by_dim || {})[dim]) || pipelineData.step5.scorecard || [];
+            const query = (document.getElementById('scorecard-search').value || '').toLowerCase().trim();
+            const quad = document.getElementById('scorecard-quad-filter').value;
+            const alertFilter = document.getElementById('scorecard-alert-filter').value;
+
+            const filtered = allItems.filter(item => {
+                const matchQ = (query === '' || String(item.name || '').toLowerCase().includes(query));
+                const itemQuad = String(item.quadrant || '');
+                const matchQuad = (quad === 'ALL' || itemQuad === quad ||
+                    (quad.includes('Ngôi sao') && itemQuad.includes('Ngôi sao')) ||
+                    (quad.includes('Bò sữa') && itemQuad.includes('Bò sữa')) ||
+                    (quad.includes('Bẫy') && itemQuad.includes('Bẫy')) ||
+                    (quad.includes('Đốt tiền') && itemQuad.includes('Đốt tiền')));
+                const itemAlert = String(item.alert || '');
+                const matchAlert = (alertFilter === 'ALL' || itemAlert === alertFilter ||
+                    (alertFilter.includes('Tối ưu') && itemAlert.includes('Tối ưu')) ||
+                    (alertFilter.includes('Cảnh báo') && itemAlert.includes('Cảnh báo')) ||
+                    (alertFilter.includes('Nguy hiểm') && itemAlert.includes('Nguy hiểm')));
+                return matchQ && matchQuad && matchAlert;
+            });
+            renderScorecardTable(filtered);
+        }
+
+        async function applyCustomCrossPivot() {
+            const rowDim = document.getElementById('pivot-row-select').value;
+            const colDim = document.getElementById('pivot-col-select').value;
+            const res = await fetch('/api/step5-filter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pivot: { row_dim: rowDim, col_dim: colDim } })
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                pipelineData = result.data;
+                renderPivots(pipelineData.step5);
+                switchPivotTab(1);
+            }
+        }
+
+        function switchPivotTab(idx) {
+            for (let i = 1; i <= 3; i++) {
+                const btn = document.getElementById(`p-btn-${i}`);
+                const c = document.getElementById(`p-content-${i}`);
+                if (btn) btn.className = (i === idx) ? 'btn btn-primary' : 'btn btn-outline';
+                if (c) c.style.display = (i === idx) ? 'block' : 'none';
+            }
+        }
+
+        function renderPivots(step5) {
+            const t1 = document.getElementById('p-tbody-1');
+            if (t1) {
+                t1.innerHTML = (step5.pivot_camp_chan || []).map(r => {
+                    const strA = String(r.alert || '');
+                    const aClass = (strA.includes('Nguy hiểm') || r.alert === 'RED') ? 'red-alert' :
+                        ((strA.includes('Cảnh báo') || r.alert === 'YELLOW') ? 'yellow-alert' : 'green-alert');
+                    return `
+                        <tr>
+                            <td><strong>${r.row_dim}</strong></td>
+                            <td><span class="badge cow">${r.col_dim}</span></td>
+                            <td>${formatNum(r.revenue)}</td>
+                            <td>${formatNum(r.net_revenue)}</td>
+                            <td>${formatNum(r.orders)}</td>
+                            <td style="${r.return_rate > 15 ? 'color:#dc2626; font-weight:700;' : ''}">${r.return_rate}%</td>
+                            <td>${formatNum(r.ad_spend)}</td>
+                            <td style="${r.net_profit < 0 ? 'color:#dc2626; font-weight:700;' : 'color:#059669; font-weight:700;'}">${formatNum(r.net_profit)}</td>
+                            <td>${r.net_margin}%</td>
+                            <td><strong>${r.roas}x</strong></td>
+                            <td><span class="badge ${aClass}">${r.alert}</span></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            const t2 = document.getElementById('p-tbody-2');
+            if (t2) {
+                t2.innerHTML = (step5.pivot_cat_reg || []).map(r => {
+                    const strA = String(r.alert || '');
+                    const aClass = (strA.includes('Nguy hiểm') || r.alert === 'RED') ? 'red-alert' :
+                        ((strA.includes('Cảnh báo') || r.alert === 'YELLOW') ? 'yellow-alert' : 'green-alert');
+                    return `
+                        <tr>
+                            <td><strong>${r.row_dim}</strong></td>
+                            <td><span class="badge star">${r.col_dim}</span></td>
+                            <td>${formatNum(r.revenue)}</td>
+                            <td>${formatNum(r.net_revenue)}</td>
+                            <td>${formatNum(r.orders)}</td>
+                            <td>${r.return_rate}%</td>
+                            <td>${formatNum(r.net_profit)}</td>
+                            <td>${r.net_margin}%</td>
+                            <td><span class="badge ${aClass}">${r.alert}</span></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            const t3 = document.getElementById('p-tbody-3');
+            if (t3) {
+                t3.innerHTML = (step5.daily_activity_log || []).map(r => `
+                    <tr>
+                        <td><strong>${r.date}</strong></td>
+                        <td>${formatNum(r.revenue)}</td>
+                        <td>${formatNum(r.orders)}</td>
+                        <td>${formatNum(r.spend)}</td>
+                        <td style="${r.net_profit < 0 ? 'color:#dc2626; font-weight:700;' : 'color:#059669; font-weight:700;'}">${formatNum(r.net_profit)}</td>
+                        <td>${r.cir}%</td>
+                        <td><span class="badge ${r.anomaly.includes('Cảnh báo') ? 'red-alert' : 'green-alert'}">${r.anomaly}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function renderPlaybook(playbook) {
+            const fmt = (arr) => (arr || []).map(item => `<div class="playbook-item">${item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>')}</div>`).join('');
+            document.getElementById('playbook-highlights-list').innerHTML = fmt(playbook.highlights);
+            document.getElementById('playbook-bottlenecks-list').innerHTML = fmt(playbook.bottlenecks);
+            document.getElementById('playbook-actions-list').innerHTML = fmt(playbook.actions);
+        }
+
+        if (window.Chart) {
+            Chart.defaults.color = '#64748b';
+            Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.06)';
+        }
+
+        function renderStep5Charts() {
+            if (!pipelineData || !pipelineData.step5 || !pipelineData.step5.has_dashboard) return;
+            const s5 = pipelineData.step5;
+
+            const lightScales = {
+                x: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748b' } },
+                y: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748b' } }
+            };
+
+            // 1. Line Chart
+            const ctxTrend = document.getElementById('timeTrendChart');
+            if (ctxTrend) {
+                if (chartInstances.trend) chartInstances.trend.destroy();
+                chartInstances.trend = new Chart(ctxTrend, {
+                    type: 'line',
+                    data: {
+                        labels: s5.time_trend.labels || [],
+                        datasets: [
+                            { label: 'Doanh Thu', data: s5.time_trend.revenue || [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 },
+                            { label: 'Chi Phí Ads', data: s5.time_trend.ad_spend || [], borderColor: '#f59e0b', tension: 0.3 },
+                            { label: 'Lợi Nhuận Ròng', data: s5.time_trend.net_profit || [], borderColor: '#2563eb', tension: 0.3 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: lightScales }
+                });
+            }
+
+            // 2. Grouped Bar Chart
+            const ctxBar = document.getElementById('channelBarChart');
+            if (ctxBar) {
+                if (chartInstances.bar) chartInstances.bar.destroy();
+                const gb = s5.grouped_bar || {};
+                chartInstances.bar = new Chart(ctxBar, {
+                    type: 'bar',
+                    data: {
+                        labels: gb.labels || [],
+                        datasets: [
+                            { label: 'Doanh Thu', data: gb.revenue || [], backgroundColor: '#10b981', borderRadius: 4 },
+                            { label: 'Chi Phí Ads', data: gb.ad_spend || [], backgroundColor: '#f59e0b', borderRadius: 4 },
+                            { label: 'Lợi Nhuận Ròng', data: gb.net_profit || [], backgroundColor: '#2563eb', borderRadius: 4 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: lightScales }
+                });
+            }
+
+            // 3. Donut Chart
+            const ctxDonut = document.getElementById('categoryDonutChart');
+            if (ctxDonut) {
+                if (chartInstances.donut) chartInstances.donut.destroy();
+                chartInstances.donut = new Chart(ctxDonut, {
+                    type: 'doughnut',
+                    data: {
+                        labels: s5.cat_donut.labels || [],
+                        datasets: [{
+                            data: s5.cat_donut.revenue || [],
+                            backgroundColor: ['#10b981', '#38bdf8', '#8b5cf6', '#f59e0b', '#ec4899', '#64748b', '#14b8a6']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            // 4. Scatter Matrix Chart
+            const ctxScatter = document.getElementById('matrixScatterChart');
+            if (ctxScatter) {
+                if (chartInstances.scatter) chartInstances.scatter.destroy();
+                const pts = (s5.matrix_scatter || []).map(p => ({
+                    x: p.x || 0,
+                    y: p.y || 0,
+                    name: p.name,
+                    quadrant: p.quadrant,
+                    rev: p.revenue || 0
+                }));
+                chartInstances.scatter = new Chart(ctxScatter, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Nhóm Hoạt Động',
+                            data: pts,
+                            backgroundColor: (ctx) => {
+                                const pt = ctx.raw;
+                                if (!pt) return '#10b981';
+                                const q = String(pt.quadrant || '');
+                                if (q.includes('Ngôi sao') || q === 'Star') return '#10b981';
+                                if (q.includes('Bò sữa') || q === 'Cash Cow') return '#38bdf8';
+                                if (q.includes('Bẫy') || q === 'Volume Trap') return '#f59e0b';
+                                return '#ef4444';
+                            },
+                            pointRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748b' }, title: { display: true, text: 'ROAS (x) hoặc AOV (Nghìn)', color: '#64748b' } },
+                            y: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748b' }, title: { display: true, text: 'Biên Lợi Nhuận Ròng (%)', color: '#64748b' } }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => `${ctx.raw.name} [${ctx.raw.quadrant}]: X=${ctx.raw.x}, Biên LN=${ctx.raw.y}%, Doanh thu=${formatNum(ctx.raw.rev)}`
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function exportCleanData(fmt) {
+            if (!pipelineData || !pipelineData.step3 || !pipelineData.step3.has_cleaned) {
+                alert("⚠️ Chưa có dữ liệu sạch để xuất. Vui lòng hoàn thành Bước 2 (Nhập dữ liệu) và Bước 3 (Làm sạch dữ liệu) trước!");
+                return;
+            }
+            window.location.href = `/api/export-clean?format=${fmt || 'csv'}`;
+        }
+
+        function exportReportDocx() {
+            if (!pipelineData || (!pipelineData.step5?.has_dashboard && !pipelineData.step3?.has_cleaned)) {
+                alert("⚠️ Chưa có dữ liệu hoàn chỉnh để xuất báo cáo. Vui lòng hoàn thành phân tích dữ liệu trước!");
+                return;
+            }
+            window.location.href = '/api/export-docx';
+        }
+
+        async function sendAIChat() {
+            const input = document.getElementById('ai-prompt-input');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            const box = document.getElementById('ai-messages-container');
+            box.innerHTML += `<div class="ai-msg user">${prompt}</div>`;
+            input.value = '';
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                const data = await res.json();
+                box.innerHTML += `<div class="ai-msg bot">${(data.response || '').replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div>`;
+                box.scrollTop = box.scrollHeight;
+            } catch (e) {
+                box.innerHTML += `<div class="ai-msg bot">⚠️ Lỗi kết nối tới AI Agent.</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
