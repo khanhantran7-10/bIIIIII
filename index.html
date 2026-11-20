@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống BI & Quản Trị Kinh Doanh Số 5 Bước (Zero-Data & Schema-Agnostic)</title>
+    <title>Smart BI Studio - Hệ Thống Quản Trị Kinh Doanh Số 4 Bước</title>
     
     <!-- CDNs: SheetJS (xlsx), PapaParse, Chart.js, html2canvas & Google Fonts -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -437,10 +437,11 @@
             background: #ffffff; border: 1px solid var(--border-card); border-radius: 10px; padding: 12px 14px;
             display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; flex-wrap: wrap;
         }
-        .quad-card.star { border-left: 4px solid #10b981; }
-        .quad-card.cow { border-left: 4px solid #0284c7; }
-        .quad-card.trap { border-left: 4px solid #f59e0b; }
-        .quad-card.burner { border-left: 4px solid #ef4444; }
+        .quad-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .quad-card.star { border-left: 4px solid #10b981; background: linear-gradient(135deg, #ffffff 60%, #f0fdf4 100%); }
+        .quad-card.cow { border-left: 4px solid #0284c7; background: linear-gradient(135deg, #ffffff 60%, #f0f9ff 100%); }
+        .quad-card.trap { border-left: 4px solid #f59e0b; background: linear-gradient(135deg, #ffffff 60%, #fffbeb 100%); }
+        .quad-card.burner { border-left: 4px solid #ef4444; background: linear-gradient(135deg, #ffffff 60%, #fef2f2 100%); }
         .quad-title { font-size: 13px; font-weight: 800; color: #0F172A; }
         .quad-count { font-size: 20px; font-weight: 800; color: #0F172A; }
 
@@ -504,6 +505,142 @@
             aside.sidebar { display: none; }
             main.content { padding: 16px; height: calc(100vh - 64px); }
         }
+
+        /* Executive Dashboard Header Bar (Step 4) */
+        .dash-exec-header {
+            background: #ffffff;
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+        }
+        .dash-exec-left {
+            flex: 1;
+            min-width: 280px;
+        }
+        .dash-badge-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .badge-step-num {
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+        .badge-scenario {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 6px;
+        }
+        .badge-scenario.scenario-a { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+        .badge-scenario.scenario-b { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+        .badge-scenario.scenario-c { background: #faf5ff; color: #6b21a8; border-color: #e9d5ff; }
+        .badge-file {
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 6px;
+        }
+        .dash-exec-title {
+            font-size: 21px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.3px;
+            margin-bottom: 4px;
+        }
+        .dash-exec-sub {
+            font-size: 13.5px;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .dash-exec-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+        .dash-actions-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .dash-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+            text-decoration: none;
+        }
+        .dash-btn.btn-secondary {
+            background: #ffffff;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+        .dash-btn.btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            color: #0f172a;
+        }
+        .dash-btn.btn-primary-shine {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            border: none;
+        }
+        .dash-btn.btn-primary-shine:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+            transform: translateY(-1px);
+        }
+        .dash-auto-row {
+            display: flex;
+            align-items: center;
+        }
+        .dash-auto-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #64748b;
+            cursor: pointer;
+            user-select: none;
+        }
+        .dash-auto-label input {
+            accent-color: #2563eb;
+        }
+        .num-col {
+            text-align: right !important;
+            font-variant-numeric: tabular-nums !important;
+            white-space: nowrap;
+        }
+
     </style>
 </head>
 <body>
@@ -514,12 +651,12 @@
                 <div class="logo-icon">📊</div>
                 <span class="logo-title-editorial">Smart BI Studio</span>
             </a>
-            <span class="pipeline-tag">Pipeline 5 Bước • Zero-Data & Schema-Agnostic 100%</span>
+            <span class="pipeline-tag">Pipeline 4 Bước Chuẩn Quản Trị • Zero-Data & Schema-Agnostic 100%</span>
         </div>
         <div class="nav-right">
             <div class="data-status-badge">
                 <span class="status-dot active" id="nav-status-dot"></span>
-                <span id="nav-unlocked-status">Trắng hoàn toàn (Clean Slate • Bước 1/5)</span>
+                <span id="nav-unlocked-status">Trắng hoàn toàn (Clean Slate • Bước 1/4)</span>
             </div>
             <!-- NÚT HARD RESET CỐ ĐỊNH TRÊN HEADER -->
             <button class="btn-hard-reset" onclick="executeHardReset()" title="Hủy toàn bộ file đã tải, xóa sạch state từ Bước 1 đến Bước 5 và làm mới phiên">
@@ -531,7 +668,7 @@
     <div class="layout">
         <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div class="sidebar-section-title">PIPELINE 5 BƯỚC TUẦN TỰ</div>
+            <div class="sidebar-section-title">PIPELINE 4 BƯỚC TUẦN TỰ</div>
             <ul class="nav-links">
                 <li id="side-nav-1" class="active">
                     <a onclick="tryNavigateStep(1)">
@@ -1137,31 +1274,37 @@
             <!-- BƯỚC 4: BI DASHBOARD & ACTIONABLE PLAYBOOK -->
             <!-- ============================================================= -->
             <div id="view-step-4" class="step-view">
-                <!-- Khung Nổi Bật Xuất Báo Cáo Quản Trị DOCX -->
-                <div class="panel-box" style="padding:18px 24px; background: linear-gradient(135deg, #f0f7ff 0%, #f5fbf7 100%); border: 1.5px solid #bfdbfe; margin-bottom: 18px; box-shadow: 0 4px 16px rgba(37, 99, 235, 0.08); border-radius: 12px;">
-                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
-                        <div style="display:flex; align-items:center; gap:16px; min-width:280px; flex:1;">
-                            <div style="font-size:38px; line-height:1; flex-shrink:0;">📄</div>
-                            <div>
-                                <div style="font-size:16px; font-weight:800; color:#0f172a; margin-bottom:4px;">
-                                    Báo cáo Quản trị BI Hoàn chỉnh đã sẵn sàng
-                                </div>
-                                <div style="font-size:13.5px; color:#334155; line-height:1.5;">
-                                    Đã tổng hợp toàn diện: Hồ sơ bối cảnh, Kiểm định chất lượng thô, Nhật ký làm sạch, Bảng đối chiếu Before/After, KPI & Unit Economics, Ma trận 4 góc và Actionable Playbook.
-                                </div>
-                            </div>
+                <!-- Executive Dashboard Header Bar (Step 4) -->
+                <div class="dash-exec-header">
+                    <div class="dash-exec-left">
+                        <div class="dash-badge-row">
+                            <span class="badge badge-step-num">BƯỚC 4</span>
+                            <span class="badge badge-scenario" id="dash-scenario-badge">📊 Đang phân tích...</span>
+                            <span class="badge badge-file" id="dash-file-badge" style="display:none;">📁 File dữ liệu</span>
                         </div>
-                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                            <button type="button" onclick="openMappingModal()" class="btn btn-outline" style="font-size:13px; font-weight:700; padding:10px 18px; border-radius:8px; display:inline-flex; align-items:center; gap:6px; cursor:pointer; background:#ffffff; border:1.5px solid #2563eb; color:#2563eb;">
-                                ⚙️ Tùy chỉnh cột dữ liệu
+                        <h2 class="dash-exec-title">Dashboard Quản Trị & Playbook Chiến Lược</h2>
+                        <p class="dash-exec-sub">Tự thích nghi theo từng tập dữ liệu, phân nhóm ma trận 4 góc, cảnh báo điểm nghẽn & đề xuất hành động tối ưu kinh doanh số.</p>
+                    </div>
+                    <div class="dash-exec-right">
+                        <div class="dash-actions-row">
+                            <button type="button" onclick="openMappingModal()" class="dash-btn btn-secondary">
+                                <span>⚙️</span> Tùy chỉnh cột
                             </button>
-                            <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#334155; cursor:pointer; user-select:none;">
-                                <input type="checkbox" id="auto-download-docx" style="accent-color:#2563eb; width:16px; height:16px;">
-                                <span>Tự động tải về khi kết thúc</span>
+                            <button type="button" onclick="exportCleanData('xlsx')" class="dash-btn btn-secondary" title="Xuất dữ liệu sạch sang Excel">
+                                <span>📊</span> Xuất Excel
+                            </button>
+                            <button type="button" onclick="exportCleanData('csv')" class="dash-btn btn-secondary" title="Xuất dữ liệu sạch sang CSV">
+                                <span>📄</span> Xuất CSV
+                            </button>
+                            <button type="button" onclick="exportReportDocx()" class="dash-btn btn-primary-shine">
+                                <span>📥</span> Xuất Báo Cáo Word (.DOCX)
+                            </button>
+                        </div>
+                        <div class="dash-auto-row">
+                            <label class="dash-auto-label">
+                                <input type="checkbox" id="auto-download-docx">
+                                <span>Tự động tải về báo cáo Word khi hoàn tất</span>
                             </label>
-                            <button onclick="exportReportDocx()" class="btn-primary" style="background:#2563eb; color:#ffffff; font-size:14px; font-weight:700; padding:12px 24px; border-radius:8px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3); display:inline-flex; align-items:center; gap:8px; cursor:pointer; border:none;">
-                                <span style="font-size:16px;">📥</span> Xuất Báo Cáo Quản Trị (.DOCX)
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1251,29 +1394,10 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive" style="width: 100%; max-width: 100%; overflow-x: auto;">
-                        <table class="bi-table">
-                            <thead>
-                                <tr>
-                                    <th>Nhóm Hoạt Động</th>
-                                    <th>Phân Nhóm Ma Trận</th>
-                                    <th>Mức Cảnh Báo</th>
-                                    <th>Doanh Thu</th>
-                                    <th>Doanh Thu Thực Thu</th>
-                                    <th>Số Đơn / Sản Lượng</th>
-                                    <th>Đơn Hoàn</th>
-                                    <th>Tỷ Lệ Hoàn (%)</th>
-                                    <th>Lượt Truy Cập</th>
-                                    <th>Tỷ Lệ Chuyển Đổi (%)</th>
-                                    <th>Giá Trị TB Đơn (AOV)</th>
-                                    <th>Chi Phí Ads</th>
-                                    <th>Giá Vốn (COGS)</th>
-                                    <th>Chi Phí/Đơn (CAC)</th>
-                                    <th>Tỷ Lệ Chi Phí Ads (CIR %)</th>
-                                    <th>Lợi Nhuận Ròng</th>
-                                    <th>Biên Lợi Nhuận (%)</th>
-                                    <th>Hiệu Quả Ads (ROAS)</th>
-                                </tr>
+                    <div class="table-responsive" style="width: 100%; max-width: 100%; overflow-x: auto; border: 1px solid var(--border-card); border-radius: 8px;">
+                        <table class="bi-table" id="step5-scorecard-table">
+                            <thead id="step5-scorecard-thead">
+                                <!-- Dynamic Scenario Header -->
                             </thead>
                             <tbody id="step5-scorecard-tbody"></tbody>
                         </table>
@@ -1384,6 +1508,24 @@
         let customFormulasList = [];
 
         const formatNum = (v) => (v === null || v === undefined || isNaN(v)) ? '--' : new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(v);
+        const formatMoney = (v) => (v === null || v === undefined || isNaN(v)) ? '--' : new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(v) + ' đ';
+        const escapeHtml = (str) => {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        };
+
+        let _chartRenderTimeout = null;
+        function scheduleChartRender() {
+            if (_chartRenderTimeout) clearTimeout(_chartRenderTimeout);
+            _chartRenderTimeout = setTimeout(() => {
+                renderStep5Charts();
+            }, 80);
+        }
 
         window.addEventListener('DOMContentLoaded', async () => {
             await loadPipeline();
@@ -1507,7 +1649,7 @@
 
             if (step === 4) {
                 if (pipelineData && pipelineData.step5 && pipelineData.step5.has_dashboard) {
-                    setTimeout(renderStep5Charts, 100);
+                    scheduleChartRender();
                 } else {
                     // Nếu chưa khởi tạo dashboard Bước 4, gọi xác nhận ngầm
                     fetch('/api/step3-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
@@ -1516,7 +1658,7 @@
                             if (res.status === 'success') {
                                 pipelineData = res.data;
                                 renderAllSteps(pipelineData);
-                                setTimeout(renderStep5Charts, 100);
+                                scheduleChartRender();
                             }
                         }).catch(e => console.warn(e));
                 }
@@ -2061,7 +2203,7 @@
                     unlockedStep = Math.max(unlockedStep, 4);
                     renderAllSteps(pipelineData);
                     goToStep(4);
-                    setTimeout(renderStep5Charts, 120);
+                    scheduleChartRender();
                 } else {
                     alert(result.message || "Lỗi xác nhận Bước 3.");
                 }
@@ -2093,7 +2235,7 @@
                     if (res.status === 'success') {
                         pipelineData = res.data;
                         renderAllSteps(pipelineData);
-                        setTimeout(renderStep5Charts, 120);
+                        scheduleChartRender();
                     }
                 }).catch(e => console.warn(e));
         }
@@ -2378,6 +2520,33 @@
         function renderStep5(step5) {
             if (!step5 || !step5.has_dashboard) return;
 
+            // Cập nhật Executive Badges
+            const fileInfo = pipelineData?.step2?.file_info;
+            const fileBadge = document.getElementById('dash-file-badge');
+            if (fileBadge) {
+                if (fileInfo && fileInfo.filename) {
+                    fileBadge.innerText = `📁 ${fileInfo.filename} (${fileInfo.row_count || 0} dòng)`;
+                    fileBadge.style.display = 'inline-flex';
+                } else {
+                    fileBadge.style.display = 'none';
+                }
+            }
+
+            const scBadge = document.getElementById('dash-scenario-badge');
+            if (scBadge) {
+                const sc = step5.scenario || 'A';
+                if (sc === 'A') {
+                    scBadge.innerText = '🛒 Kịch bản A: E-Commerce & Ads';
+                    scBadge.className = 'badge badge-scenario scenario-a';
+                } else if (sc === 'B') {
+                    scBadge.innerText = '🏪 Kịch bản B: Bán Hàng & Phân Phối';
+                    scBadge.className = 'badge badge-scenario scenario-b';
+                } else {
+                    scBadge.innerText = '📊 Kịch bản C: Dữ Liệu Tổng Quát';
+                    scBadge.className = 'badge badge-scenario scenario-c';
+                }
+            }
+
             const kpis = step5.kpis || {};
             renderAdaptiveKPIs(step5);
 
@@ -2437,7 +2606,7 @@
                 pCol.innerHTML = dims.map(d => `<option value="${d}" ${d === meta.p1_col ? 'selected' : ''}>${d}</option>`).join('');
             }
 
-            renderScorecardTable(step5.scorecard || []);
+            renderScorecardTable(step5.scorecard || [], step5.scenario || 'A');
             renderPivots(step5);
             renderPlaybook(step5.playbook || {});
         }
@@ -2458,7 +2627,7 @@
             if (result.status === 'success') {
                 pipelineData = result.data;
                 renderStep5(pipelineData.step5);
-                renderStep5Charts();
+                scheduleChartRender();
             }
         }
 
@@ -2471,12 +2640,75 @@
             if (!pipelineData || !pipelineData.step5) return;
             const dim = document.getElementById('scorecard-dim-switcher').value;
             const list = (pipelineData.step5.scorecards_by_dim || {})[dim] || [];
-            renderScorecardTable(list);
+            renderScorecardTable(list, pipelineData?.step5?.scenario || 'A');
         }
 
-        function renderScorecardTable(items) {
+        function renderScorecardTable(items, scenario) {
+            const sc = scenario || (pipelineData?.step5?.scenario) || 'A';
+            const thead = document.getElementById('step5-scorecard-thead');
             const tbody = document.getElementById('step5-scorecard-tbody');
             if (!tbody) return;
+
+            if (thead) {
+                if (sc === 'A') {
+                    thead.innerHTML = `
+                        <tr>
+                            <th style="min-width:140px;">Nhóm / Đối Tượng</th>
+                            <th style="min-width:140px;">Phân Nhóm Ma Trận</th>
+                            <th style="min-width:100px;">Mức Cảnh Báo</th>
+                            <th class="num-col">Doanh Thu (GMV)</th>
+                            <th class="num-col">Thực Thu</th>
+                            <th class="num-col">Đơn Hàng</th>
+                            <th class="num-col">Đơn Hoàn</th>
+                            <th class="num-col">Tỷ Lệ Hoàn</th>
+                            <th class="num-col">Lượt Xem</th>
+                            <th class="num-col">CR (%)</th>
+                            <th class="num-col">AOV</th>
+                            <th class="num-col">Chi Phí Ads</th>
+                            <th class="num-col">Giá Vốn (COGS)</th>
+                            <th class="num-col">CPA</th>
+                            <th class="num-col">CIR (%)</th>
+                            <th class="num-col">Lợi Nhuận Ròng</th>
+                            <th class="num-col">Biên Lãi (%)</th>
+                            <th class="num-col">ROAS</th>
+                        </tr>
+                    `;
+                } else if (sc === 'B') {
+                    thead.innerHTML = `
+                        <tr>
+                            <th style="min-width:160px;">Nhóm / Đối Tượng</th>
+                            <th style="min-width:140px;">Phân Nhóm Ma Trận</th>
+                            <th style="min-width:100px;">Mức Cảnh Báo</th>
+                            <th class="num-col">Tổng Doanh Thu</th>
+                            <th class="num-col">Doanh Thu Thực Thu</th>
+                            <th class="num-col">Số Đơn / Lượng Bán</th>
+                            <th class="num-col">Giá Trị TB Đơn (AOV)</th>
+                            <th class="num-col">Chi Phí / Giá Vốn</th>
+                            <th class="num-col">Lợi Nhuận Ròng</th>
+                            <th class="num-col">Biên Lợi Nhuận (%)</th>
+                        </tr>
+                    `;
+                } else {
+                    thead.innerHTML = `
+                        <tr>
+                            <th style="min-width:180px;">Nhóm / Đối Tượng</th>
+                            <th style="min-width:140px;">Phân Nhóm Ma Trận</th>
+                            <th style="min-width:100px;">Mức Cảnh Báo</th>
+                            <th class="num-col">Tổng Giá Trị / Doanh Thu</th>
+                            <th class="num-col">Số Lượng / Bản Ghi</th>
+                            <th class="num-col">Giá Trị Trung Bình</th>
+                            <th class="num-col">Lợi Nhuận / Giá Trị Thuần</th>
+                        </tr>
+                    `;
+                }
+            }
+
+            if (!items || items.length === 0) {
+                const colsCount = sc === 'A' ? 18 : (sc === 'B' ? 10 : 7);
+                tbody.innerHTML = `<tr><td colspan="${colsCount}" style="text-align:center; padding:30px; color:#64748b;">Không có dữ liệu phù hợp với bộ lọc hiện tại.</td></tr>`;
+                return;
+            }
+
             tbody.innerHTML = items.map(s => {
                 const q = String(s.quadrant || '');
                 const qClass = (q.includes('Ngôi sao') || q === 'Star') ? 'star' :
@@ -2485,28 +2717,59 @@
                 const a = String(s.alert || '');
                 const aClass = (a.includes('Nguy hiểm') || a === 'RED') ? 'red-alert' :
                     ((a.includes('Cảnh báo') || a === 'YELLOW') ? 'yellow-alert' : 'green-alert');
-                return `
-                    <tr>
-                        <td><strong>${s.name}</strong></td>
-                        <td><span class="badge ${qClass}">${s.quadrant}</span></td>
-                        <td><span class="badge ${aClass}">${s.alert}</span></td>
-                        <td>${formatNum(s.revenue)}</td>
-                        <td style="color:#059669; font-weight:700;">${formatNum(s.net_realized_revenue)}</td>
-                        <td>${formatNum(s.orders)}</td>
-                        <td style="${s.returned_orders > 0 ? 'color:#dc2626;' : ''}">${formatNum(s.returned_orders)}</td>
-                        <td style="${s.return_rate > 15 ? 'color:#dc2626; font-weight:700;' : ''}">${s.return_rate}%</td>
-                        <td>${formatNum(s.traffic)}</td>
-                        <td>${s.cr_percent}%</td>
-                        <td>${formatNum(s.aov)}</td>
-                        <td>${formatNum(s.ad_spend)}</td>
-                        <td>${formatNum(s.cogs)}</td>
-                        <td>${formatNum(s.cpa)}</td>
-                        <td>${s.cir_percent}%</td>
-                        <td style="${s.net_profit < 0 ? 'color:#dc2626; font-weight:700;' : 'color:#059669; font-weight:700;'}">${formatNum(s.net_profit)}</td>
-                        <td>${s.net_margin_percent}%</td>
-                        <td><strong style="color:#0284c7;">${s.roas}x</strong></td>
-                    </tr>
-                `;
+
+                if (sc === 'A') {
+                    return `
+                        <tr>
+                            <td><strong>${escapeHtml(s.name)}</strong></td>
+                            <td><span class="badge ${qClass}">${s.quadrant}</span></td>
+                            <td><span class="badge ${aClass}">${s.alert}</span></td>
+                            <td class="num-col">${formatMoney(s.revenue)}</td>
+                            <td class="num-col" style="color:#059669; font-weight:700;">${formatMoney(s.net_realized_revenue)}</td>
+                            <td class="num-col">${formatNum(s.orders)}</td>
+                            <td class="num-col" style="${s.returned_orders > 0 ? 'color:#dc2626;' : ''}">${formatNum(s.returned_orders)}</td>
+                            <td class="num-col" style="${s.return_rate > 15 ? 'color:#dc2626; font-weight:700;' : ''}">${s.return_rate}%</td>
+                            <td class="num-col">${formatNum(s.traffic)}</td>
+                            <td class="num-col">${s.cr_percent}%</td>
+                            <td class="num-col">${formatMoney(s.aov)}</td>
+                            <td class="num-col">${formatMoney(s.ad_spend)}</td>
+                            <td class="num-col">${formatMoney(s.cogs)}</td>
+                            <td class="num-col">${formatMoney(s.cpa)}</td>
+                            <td class="num-col">${s.cir_percent}%</td>
+                            <td class="num-col" style="${s.net_profit < 0 ? 'color:#dc2626; font-weight:700;' : 'color:#059669; font-weight:700;'}">${formatMoney(s.net_profit)}</td>
+                            <td class="num-col">${s.net_margin_percent}%</td>
+                            <td class="num-col"><strong style="color:#0284c7;">${s.roas}x</strong></td>
+                        </tr>
+                    `;
+                } else if (sc === 'B') {
+                    return `
+                        <tr>
+                            <td><strong>${escapeHtml(s.name)}</strong></td>
+                            <td><span class="badge ${qClass}">${s.quadrant}</span></td>
+                            <td><span class="badge ${aClass}">${s.alert}</span></td>
+                            <td class="num-col">${formatMoney(s.revenue)}</td>
+                            <td class="num-col" style="color:#059669; font-weight:700;">${formatMoney(s.net_realized_revenue || s.revenue)}</td>
+                            <td class="num-col">${formatNum(s.orders)}</td>
+                            <td class="num-col">${formatMoney(s.aov)}</td>
+                            <td class="num-col">${formatMoney(s.cogs || s.ad_spend)}</td>
+                            <td class="num-col" style="${s.net_profit < 0 ? 'color:#dc2626; font-weight:700;' : 'color:#059669; font-weight:700;'}">${formatMoney(s.net_profit)}</td>
+                            <td class="num-col">${s.net_margin_percent}%</td>
+                        </tr>
+                    `;
+                } else {
+                    const avgVal = s.orders > 0 ? Math.round(s.revenue / s.orders) : 0;
+                    return `
+                        <tr>
+                            <td><strong>${escapeHtml(s.name)}</strong></td>
+                            <td><span class="badge ${qClass}">${s.quadrant}</span></td>
+                            <td><span class="badge ${aClass}">${s.alert}</span></td>
+                            <td class="num-col">${formatMoney(s.revenue)}</td>
+                            <td class="num-col">${formatNum(s.orders)}</td>
+                            <td class="num-col">${formatMoney(avgVal || s.aov)}</td>
+                            <td class="num-col" style="color:#059669; font-weight:700;">${formatMoney(s.net_profit || s.revenue)}</td>
+                        </tr>
+                    `;
+                }
             }).join('');
         }
 
@@ -2533,7 +2796,7 @@
                     (alertFilter.includes('Nguy hiểm') && itemAlert.includes('Nguy hiểm')));
                 return matchQ && matchQuad && matchAlert;
             });
-            renderScorecardTable(filtered);
+            renderScorecardTable(filtered, pipelineData?.step5?.scenario || 'A');
         }
 
         async function applyCustomCrossPivot() {
@@ -2640,30 +2903,46 @@
             if (!pipelineData || !pipelineData.step5 || !pipelineData.step5.has_dashboard) return;
             const s5 = pipelineData.step5;
 
+            // Safe destruction of any existing charts on canvases
+            ['timeTrendChart', 'channelBarChart', 'categoryDonutChart', 'matrixScatterChart'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const existing = Chart.getChart(el);
+                    if (existing) {
+                        try { existing.destroy(); } catch (e) { console.warn("Destroy error", id, e); }
+                    }
+                }
+            });
+
             const lightScales = {
                 x: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748b' } },
                 y: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748b' } }
             };
 
-            // 1. Chart 1: Line Chart (nếu có Date) HOẶC Horizontal Bar Chart Top 10 (nếu không có Date)
+            // 1. Chart 1: Time Trend / Top 10
             const ctxTrend = document.getElementById('timeTrendChart');
             const hasDate = s5.has_date || (s5.time_trend && s5.time_trend.is_date);
             const chart1Title = document.getElementById('chart-title-1');
+            const tt = s5.time_trend || {};
+            const ttLabels = tt.labels || [];
+            const ttRev = tt.revenue || [];
+            const ttSpend = tt.ad_spend || [];
+            const ttProfit = tt.net_profit || [];
 
             if (ctxTrend) {
-                if (chartInstances.trend) chartInstances.trend.destroy();
                 if (hasDate) {
-                    if (chart1Title) chart1Title.innerText = "📈 Xu Hướng Doanh Thu, Chi Phí Ads & Lợi Nhuận Theo Thời Gian";
+                    if (chart1Title) chart1Title.innerText = "📈 Xu Hướng Doanh Thu, Chi Phí & Lợi Nhuận Theo Thời Gian";
+                    const datasets = [
+                        { label: 'Doanh Thu', data: ttRev, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.08)', fill: true, tension: 0.3 }
+                    ];
+                    if (s5.scenario === 'A') {
+                        datasets.push({ label: 'Chi Phí Ads', data: ttSpend, borderColor: '#f59e0b', tension: 0.3 });
+                    }
+                    datasets.push({ label: 'Lợi Nhuận Ròng', data: ttProfit, borderColor: '#2563eb', tension: 0.3 });
+
                     chartInstances.trend = new Chart(ctxTrend, {
                         type: 'line',
-                        data: {
-                            labels: s5.time_trend.labels || [],
-                            datasets: [
-                                { label: 'Doanh Thu', data: s5.time_trend.revenue || [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 },
-                                { label: 'Chi Phí Ads', data: s5.time_trend.ad_spend || [], borderColor: '#f59e0b', tension: 0.3 },
-                                { label: 'Lợi Nhuận Ròng', data: s5.time_trend.net_profit || [], borderColor: '#2563eb', tension: 0.3 }
-                            ]
-                        },
+                        data: { labels: ttLabels, datasets },
                         options: { responsive: true, maintainAspectRatio: false, scales: lightScales }
                     });
                 } else {
@@ -2671,10 +2950,10 @@
                     chartInstances.trend = new Chart(ctxTrend, {
                         type: 'bar',
                         data: {
-                            labels: s5.time_trend.labels || [],
+                            labels: ttLabels,
                             datasets: [
-                                { label: 'Doanh Thu', data: s5.time_trend.revenue || [], backgroundColor: '#10b981', borderRadius: 4 },
-                                { label: 'Lợi Nhuận / Giá Trị', data: s5.time_trend.net_profit || [], backgroundColor: '#2563eb', borderRadius: 4 }
+                                { label: 'Doanh Thu / Giá Trị', data: ttRev, backgroundColor: '#10b981', borderRadius: 4 },
+                                { label: 'Lợi Nhuận / Giá Trị Ròng', data: ttProfit, backgroundColor: '#2563eb', borderRadius: 4 }
                             ]
                         },
                         options: {
@@ -2687,35 +2966,38 @@
                 }
             }
 
-            // 2. Grouped Bar Chart
+            // 2. Chart 2: Grouped Bar Chart
             const ctxBar = document.getElementById('channelBarChart');
             if (ctxBar) {
-                if (chartInstances.bar) chartInstances.bar.destroy();
                 const gb = s5.grouped_bar || {};
+                const gbDatasets = [
+                    { label: 'Doanh Thu', data: gb.revenue || [], backgroundColor: '#10b981', borderRadius: 4 }
+                ];
+                if (s5.scenario === 'A') {
+                    gbDatasets.push({ label: 'Chi Phí Ads', data: gb.ad_spend || [], backgroundColor: '#f59e0b', borderRadius: 4 });
+                }
+                gbDatasets.push({ label: 'Lợi Nhuận Ròng', data: gb.net_profit || [], backgroundColor: '#2563eb', borderRadius: 4 });
+
                 chartInstances.bar = new Chart(ctxBar, {
                     type: 'bar',
                     data: {
                         labels: gb.labels || [],
-                        datasets: [
-                            { label: 'Doanh Thu', data: gb.revenue || [], backgroundColor: '#10b981', borderRadius: 4 },
-                            { label: 'Chi Phí Ads', data: gb.ad_spend || [], backgroundColor: '#f59e0b', borderRadius: 4 },
-                            { label: 'Lợi Nhuận Ròng', data: gb.net_profit || [], backgroundColor: '#2563eb', borderRadius: 4 }
-                        ]
+                        datasets: gbDatasets
                     },
                     options: { responsive: true, maintainAspectRatio: false, scales: lightScales }
                 });
             }
 
-            // 3. Donut Chart
+            // 3. Chart 3: Donut Chart
             const ctxDonut = document.getElementById('categoryDonutChart');
             if (ctxDonut) {
-                if (chartInstances.donut) chartInstances.donut.destroy();
+                const cd = s5.cat_donut || {};
                 chartInstances.donut = new Chart(ctxDonut, {
                     type: 'doughnut',
                     data: {
-                        labels: s5.cat_donut.labels || [],
+                        labels: cd.labels || [],
                         datasets: [{
-                            data: s5.cat_donut.revenue || [],
+                            data: cd.revenue || [],
                             backgroundColor: ['#10b981', '#38bdf8', '#8b5cf6', '#f59e0b', '#ec4899', '#64748b', '#14b8a6']
                         }]
                     },
@@ -2723,17 +3005,17 @@
                 });
             }
 
-            // 4. Scatter Matrix Chart
+            // 4. Chart 4: Scatter Matrix Chart
             const ctxScatter = document.getElementById('matrixScatterChart');
             if (ctxScatter) {
-                if (chartInstances.scatter) chartInstances.scatter.destroy();
                 const pts = (s5.matrix_scatter || []).map(p => ({
-                    x: p.x || 0,
-                    y: p.y || 0,
-                    name: p.name,
-                    quadrant: p.quadrant,
-                    rev: p.revenue || 0
+                    x: Number(p.x) || 0,
+                    y: Number(p.y) || 0,
+                    name: p.name || '',
+                    quadrant: p.quadrant || '',
+                    rev: Number(p.revenue) || 0
                 }));
+
                 chartInstances.scatter = new Chart(ctxScatter, {
                     type: 'scatter',
                     data: {
@@ -2745,24 +3027,31 @@
                                 if (!pt) return '#10b981';
                                 const q = String(pt.quadrant || '');
                                 if (q.includes('Ngôi sao') || q === 'Star') return '#10b981';
-                                if (q.includes('Bò sữa') || q === 'Cash Cow') return '#38bdf8';
+                                if (q.includes('Bò sữa') || q === 'Cash Cow') return '#0284c7';
                                 if (q.includes('Bẫy') || q === 'Volume Trap') return '#f59e0b';
                                 return '#ef4444';
                             },
-                            pointRadius: 8
+                            pointRadius: (ctx) => {
+                                const pt = ctx.raw;
+                                if (!pt) return 6;
+                                const maxR = Math.max(...pts.map(p => p.rev), 1);
+                                return Math.min(18, Math.max(7, Math.round((pt.rev / maxR) * 16) + 4));
+                            }
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: {
-                            x: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748b' }, title: { display: true, text: 'ROAS (x) hoặc AOV (Nghìn)', color: '#64748b' } },
-                            y: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748b' }, title: { display: true, text: 'Biên Lợi Nhuận Ròng (%)', color: '#64748b' } }
-                        },
+                        scales: lightScales,
                         plugins: {
                             tooltip: {
                                 callbacks: {
-                                    label: (ctx) => `${ctx.raw.name} [${ctx.raw.quadrant}]: X=${ctx.raw.x}, Biên LN=${ctx.raw.y}%, Doanh thu=${formatNum(ctx.raw.rev)}`
+                                    label: (ctx) => {
+                                        const pt = ctx.raw;
+                                        if (!pt) return '';
+                                        const xLabel = s5.scenario === 'A' ? `ROAS: ${pt.x}x` : `AOV: ${formatMoney(pt.x)}`;
+                                        return `${pt.name || ''} [${pt.quadrant || ''}]: ${xLabel}, Biên Lãi: ${pt.y}%, Doanh thu: ${formatMoney(pt.rev)}`;
+                                    }
                                 }
                             }
                         }
