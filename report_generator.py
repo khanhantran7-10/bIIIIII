@@ -29,15 +29,31 @@ def format_num(val):
     except Exception:
         return str(val)
 
-def generate_docx_report(state, raw_df=None, cleaned_df=None, processed_df=None):
+def decode_image_data(img_str):
+    """Giải mã dữ liệu ảnh base64 hoặc Data URL (PNG/JPEG) thành bytes."""
+    if not img_str:
+        return None
+    if isinstance(img_str, bytes):
+        return img_str
+    if not isinstance(img_str, str):
+        return None
+    if "," in img_str:
+        img_str = img_str.split(",", 1)[1]
+    import base64
+    try:
+        return base64.b64decode(img_str)
+    except Exception:
+        return None
+
+def generate_docx_report(state, raw_df=None, cleaned_df=None, processed_df=None, images=None):
     """
-    Sinh tài liệu Word (.DOCX) chuyên nghiệp tổng hợp toàn diện cả 5 bước của quy trình Smart BI Studio:
-    - Trang bìa / Tiêu đề lớn
-    - Phần 1: Hồ sơ bối cảnh doanh nghiệp (Bước 1)
-    - Phần 2: Kiểm định & Nhật ký làm sạch (Bước 2 & 3)
-    - Phần 3: Bảng chỉ số KPI & Kinh tế đơn vị (Bước 4 & 5)
-    - Phần 4: Ma trận 4 Góc phần tư & Chấm điểm hoạt động
-    - Phần 5: Kế hoạch hành động quản trị (Actionable Playbook)
+    Sinh tài liệu Word (.DOCX) chuyên nghiệp tổng hợp toàn diện quy trình Smart BI Studio:
+    - Bố cục chuẩn 5 phần:
+      1. Tiêu đề báo cáo, ngày xuất, tên file dữ liệu.
+      2. Hồ sơ bối cảnh tóm tắt (từ Bước 1).
+      3. Tóm tắt kiểm định & Nhật ký làm sạch dữ liệu (từ Bước 2 & 3).
+      4. Trực quan hóa Dashboard (Nhúng toàn bộ ảnh KPI Cards + Biểu đồ thực tế) kèm bảng chỉ số chi tiết.
+      5. Nhận định trọng tâm & Kế hoạch hành động (Actionable Playbook).
     """
     doc = docx.Document()
 
@@ -113,39 +129,56 @@ def generate_docx_report(state, raw_df=None, cleaned_df=None, processed_df=None)
     p_p1 = doc.add_paragraph()
     p_p1.paragraph_format.line_spacing = 1.3
     
-    # 1. Tổng quan Doanh nghiệp
-    r = p_p1.add_run("1.1. Tổng Quan Doanh Nghiệp (Ngành nghề, Mô hình, Quy mô):\n")
+    # 1.1. Doanh nghiệp & Mô hình
+    r = p_p1.add_run("1.1. Doanh Nghiệp & Mô Hình Hoạt Động:\n")
     r.bold = True
     r.font.color.rgb = TEXT_MAIN
-    overview_text = prof.get("company_overview") or "Chưa có mô tả bối cảnh doanh nghiệp cụ thể."
-    r_val = p_p1.add_run(f"• {overview_text}\n\n")
-    r_val.font.color.rgb = TEXT_MUTED
+    c_bullets = prof.get("company_bullets") or []
+    if c_bullets:
+        for b in c_bullets:
+            p_p1.add_run(f"• {b.replace('**', '')}\n")
+    else:
+        overview_text = prof.get("company_overview") or "Chưa có mô tả bối cảnh doanh nghiệp cụ thể."
+        p_p1.add_run(f"• {overview_text}\n")
+    p_p1.add_run("\n")
 
-    # 1.2. Mục tiêu Phân tích Cốt lõi
-    r = p_p1.add_run("1.2. Mục Tiêu Phân Tích Cốt Lõi & Câu Hỏi Trọng Tâm:\n")
+    # 1.2. Bài toán & Mục tiêu cốt lõi
+    r = p_p1.add_run("1.2. Bài Toán & Mục Tiêu Phân Tích Cốt Lõi:\n")
     r.bold = True
     r.font.color.rgb = TEXT_MAIN
-    goal_text = prof.get("primary_goal") or "Đánh giá hiệu quả kinh doanh, tối ưu hóa lợi nhuận ròng và chi phí ads."
-    p_p1.add_run(f"• Mục tiêu chính: {goal_text}\n")
+    g_bullets = prof.get("goal_bullets") or []
+    if g_bullets:
+        for b in g_bullets:
+            p_p1.add_run(f"• {b.replace('**', '')}\n")
+    else:
+        goal_text = prof.get("primary_goal") or "Đánh giá hiệu quả kinh doanh, tối ưu hóa lợi nhuận ròng và chi phí ads."
+        p_p1.add_run(f"• Mục tiêu chính: {goal_text}\n")
     
     questions = prof.get("key_questions") or []
-    if questions:
+    if questions and not g_bullets:
         for q in questions:
             p_p1.add_run(f"   - 🎯 {q}\n")
     p_p1.add_run("\n")
 
-    # 1.3. Ràng buộc & Ngưỡng KPI
-    r = p_p1.add_run("1.3. Ràng Buộc Dữ Liệu & Ngưỡng Mục Tiêu Hoạt Động:\n")
-    r.bold = True
-    r.font.color.rgb = TEXT_MAIN
-    constraints_text = prof.get("data_constraints") or "Áp dụng ngưỡng phân loại 4 nhóm ma trận dựa trên trung vị (Median) và chuẩn hoạt động đa kênh."
-    p_p1.add_run(f"• {constraints_text}\n")
+    # 1.3. Chỉ số & Ngưỡng lưu ý (chỉ hiển thị nếu có trong input)
+    k_bullets = prof.get("constraint_bullets") or []
+    constraints_text = prof.get("data_constraints") or ""
+    if k_bullets or (constraints_text and constraints_text != "Đối chiếu trực tiếp với cấu trúc các cột dữ liệu thực tế người dùng tải lên tại Bước 2."):
+        r = p_p1.add_run("1.3. Chỉ Số & Ngưỡng Lưu Ý (KPI & Ràng Buộc):\n")
+        r.bold = True
+        r.font.color.rgb = TEXT_MAIN
+        if k_bullets:
+            for b in k_bullets:
+                p_p1.add_run(f"• {b.replace('**', '')}\n")
+        elif constraints_text:
+            p_p1.add_run(f"• {constraints_text}\n")
+        p_p1.add_run("\n")
 
     # =========================================================================
-    # PHẦN 2: KIỂM ĐỊNH & NHẬT KÝ LÀM SẠCH DỮ LIỆU (BƯỚC 2 & BƯỚC 3)
+    # PHẦN 2: KIỂM ĐỊNH DỮ LIỆU THÔ & NHẬT KÝ LÀM SẠCH (DATA PROFILING & CLEANING)
     # =========================================================================
     h2 = doc.add_heading(level=1)
-    r = h2.add_run("PHẦN 2: KIỂM ĐỊNH DỮ LIỆU THÔ & NHẬT KÝ LÀM SẠCH (DATA PROFILING & CLEANING)")
+    r = h2.add_run("PHẦN 2: BÁO CÁO KIỂM ĐỊNH CHẤT LƯỢNG & NHẬT KÝ LÀM SẠCH DỮ LIỆU")
     r.font.size = Pt(13.5)
     r.font.bold = True
     r.font.color.rgb = PRIMARY_COLOR
@@ -220,28 +253,136 @@ def generate_docx_report(state, raw_df=None, cleaned_df=None, processed_df=None)
     doc.add_paragraph().paragraph_format.space_after = Pt(12)
 
     # =========================================================================
-    # PHẦN 3: TỔNG HỢP CHỈ SỐ KPI & KINH TẾ ĐƠN VỊ (BƯỚC 4 & BƯỚC 5)
+    # PHẦN 3 (HOẶC 4): TRỰC QUAN HÓA DASHBOARD & BẢNG CHỈ SỐ QUẢN TRỊ CHI TIẾT
     # =========================================================================
     h3 = doc.add_heading(level=1)
-    r = h3.add_run("PHẦN 3: BẢNG CHỈ SỐ KPI & KINH TẾ ĐƠN VỊ TOÀN HỆ THỐNG (UNIT ECONOMICS)")
+    r = h3.add_run("PHẦN 4: TRỰC QUAN HÓA DASHBOARD & BẢNG CHỈ SỐ QUẢN TRỊ CHI TIẾT")
     r.font.size = Pt(13.5)
     r.font.bold = True
     r.font.color.rgb = PRIMARY_COLOR
 
-    step5 = state.get("step5", {})
+    step5 = state.get("step5") or state.get("step4") or {}
     kpis = step5.get("kpis") or {}
 
-    t_kpi = doc.add_table(rows=7, cols=4)
+    # NHÚNG HÌNH ẢNH DASHBOARD THỰC TẾ (NẾU ĐƯỢC CHUYỂN TỪ FRONTEND)
+    img_counter = 1
+    if images and isinstance(images, dict):
+        # 1. Ảnh Khối Thẻ KPI
+        kpi_img_bytes = decode_image_data(images.get("kpi"))
+        if kpi_img_bytes:
+            try:
+                p_img = doc.add_paragraph()
+                p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                doc.add_picture(io.BytesIO(kpi_img_bytes), width=Inches(6.0))
+                p_cap = doc.add_paragraph()
+                p_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                r_cap = p_cap.add_run(f"Hình {img_counter}: Tổng quan Thẻ chỉ số KPI Quản trị Doanh nghiệp")
+                r_cap.font.italic = True
+                r_cap.font.size = Pt(9.5)
+                r_cap.font.color.rgb = TEXT_MUTED
+                img_counter += 1
+                doc.add_paragraph().paragraph_format.space_after = Pt(8)
+            except Exception as e:
+                print("Error adding kpi image:", e)
+
+        # 2. Ảnh Biểu Đồ Xu Hướng / Top-N
+        trend_img_bytes = decode_image_data(images.get("trend"))
+        if trend_img_bytes:
+            try:
+                p_img = doc.add_paragraph()
+                p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                doc.add_picture(io.BytesIO(trend_img_bytes), width=Inches(6.0))
+                p_cap = doc.add_paragraph()
+                p_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                r_cap = p_cap.add_run(f"Hình {img_counter}: Biểu đồ Phân tích Xu hướng & Hoạt động Thời gian thực")
+                r_cap.font.italic = True
+                r_cap.font.size = Pt(9.5)
+                r_cap.font.color.rgb = TEXT_MUTED
+                img_counter += 1
+                doc.add_paragraph().paragraph_format.space_after = Pt(8)
+            except Exception as e:
+                print("Error adding trend image:", e)
+
+        # 3. Ảnh Biểu Đồ So Sánh Nhóm (Bar Chart)
+        bar_img_bytes = decode_image_data(images.get("bar"))
+        if bar_img_bytes:
+            try:
+                p_img = doc.add_paragraph()
+                p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                doc.add_picture(io.BytesIO(bar_img_bytes), width=Inches(6.0))
+                p_cap = doc.add_paragraph()
+                p_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                r_cap = p_cap.add_run(f"Hình {img_counter}: Biểu đồ So sánh Hiệu quả Giữa các Nhóm / Kênh hoạt động")
+                r_cap.font.italic = True
+                r_cap.font.size = Pt(9.5)
+                r_cap.font.color.rgb = TEXT_MUTED
+                img_counter += 1
+                doc.add_paragraph().paragraph_format.space_after = Pt(8)
+            except Exception as e:
+                print("Error adding bar image:", e)
+
+        # 4. Ảnh Biểu Đồ Cơ Cấu (Donut Chart)
+        donut_img_bytes = decode_image_data(images.get("donut"))
+        if donut_img_bytes:
+            try:
+                p_img = doc.add_paragraph()
+                p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                doc.add_picture(io.BytesIO(donut_img_bytes), width=Inches(5.2))
+                p_cap = doc.add_paragraph()
+                p_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                r_cap = p_cap.add_run(f"Hình {img_counter}: Biểu đồ Cơ cấu Tỷ trọng Đóng góp theo Phân loại")
+                r_cap.font.italic = True
+                r_cap.font.size = Pt(9.5)
+                r_cap.font.color.rgb = TEXT_MUTED
+                img_counter += 1
+                doc.add_paragraph().paragraph_format.space_after = Pt(8)
+            except Exception as e:
+                print("Error adding donut image:", e)
+
+        # 5. Ảnh Biểu Đồ Ma Trận 4 Góc (Scatter Matrix)
+        scatter_img_bytes = decode_image_data(images.get("scatter"))
+        if scatter_img_bytes:
+            try:
+                p_img = doc.add_paragraph()
+                p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                doc.add_picture(io.BytesIO(scatter_img_bytes), width=Inches(6.0))
+                p_cap = doc.add_paragraph()
+                p_cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                r_cap = p_cap.add_run(f"Hình {img_counter}: Biểu đồ Ma trận 4 Góc phần tư (Unit Economics Matrix)")
+                r_cap.font.italic = True
+                r_cap.font.size = Pt(9.5)
+                r_cap.font.color.rgb = TEXT_MUTED
+                img_counter += 1
+                doc.add_paragraph().paragraph_format.space_after = Pt(8)
+            except Exception as e:
+                print("Error adding scatter image:", e)
+
+    # 4.1. BẢNG TỔNG HỢP CHỈ SỐ QUẢN TRỊ (ADAPTIVE TABLE)
+    doc.add_paragraph().add_run("4.1. Bảng Tổng Hợp Chỉ Số Kinh Doanh & Kinh Tế Đơn Vị:").bold = True
+    has_ads = float(kpis.get("total_cost", 0) or 0) > 0
+    has_returns = float(kpis.get("total_returned", 0) or 0) > 0
+
+    if has_ads:
+        kpi_rows_data = [
+            ["Chỉ Số Tài Chính & Doanh Thu", "Giá Trị", "Chỉ Số Vận Hành & Chuyển Đổi", "Giá Trị"],
+            ["Tổng Doanh Thu (GMV)", f"{format_num(kpis.get('total_revenue', 0))} đ", "Tổng Lượng Đơn Đặt Hàng", f"{format_num(kpis.get('total_orders', 0))} đơn"],
+            ["Thực Thu Ước Tính Sau Hoàn", f"{format_num(kpis.get('net_realized_revenue', 0))} đ", "Đơn Hoàn Trả & Tỷ Lệ Hoàn", f"{format_num(kpis.get('total_returned', 0))} đơn ({kpis.get('system_return_rate', 0)}%)"],
+            ["Tổng Chi Phí Quảng Cáo (Ads)", f"{format_num(kpis.get('total_cost', 0))} đ", "Giá Trị Trung Bình Đơn (AOV)", f"{format_num(kpis.get('aov', 0))} đ"],
+            ["Tổng Giá Vốn Hàng Bán (COGS)", f"{format_num(kpis.get('total_cogs', 0))} đ", "Hiệu Quả Quảng Cáo (ROAS)", f"{kpis.get('roas', 0)}x"],
+            ["Lợi Nhuận Ròng (Net Profit)", f"{format_num(kpis.get('net_profit', 0))} đ", "Tỷ Lệ Chuyển Đổi (CR)", f"{kpis.get('system_cr', 0)}%"],
+            ["Biên Lợi Nhuận Ròng (Net Margin)", f"{kpis.get('net_margin_percent', 0)}%", "Tỷ Lệ Chi Phí Ads (CIR)", f"{kpis.get('cir_percent', 0)}%"]
+        ]
+    else:
+        kpi_rows_data = [
+            ["Chỉ Số Doanh Thu & Quy Mô", "Giá Trị", "Chỉ Số Lợi Nhuận & Đơn Hàng", "Giá Trị"],
+            ["Tổng Doanh Thu", f"{format_num(kpis.get('total_revenue', 0))} đ", "Tổng Sản Lượng / Đơn Hàng", f"{format_num(kpis.get('total_orders', 0))} lượt"],
+            ["Lợi Nhuận Ròng", f"{format_num(kpis.get('net_profit', 0))} đ", "Giá Trị Trung Bình (AOV)", f"{format_num(kpis.get('aov', 0))} đ"],
+            ["Tổng Giá Vốn (COGS)", f"{format_num(kpis.get('total_cogs', 0))} đ", "Biên Lợi Nhuận Ròng", f"{kpis.get('net_margin_percent', 0)}%"],
+            ["Thực Thu Ghi Nhận", f"{format_num(kpis.get('net_realized_revenue', 0))} đ", "Trạng Thái Cảnh Báo", str(kpis.get('system_alert', '🟢 Tối ưu'))]
+        ]
+
+    t_kpi = doc.add_table(rows=len(kpi_rows_data), cols=4)
     t_kpi.alignment = WD_TABLE_ALIGNMENT.CENTER
-    kpi_rows_data = [
-        ["Chỉ Số Tài Chính & Doanh Thu", "Giá Trị", "Chỉ Số Vận Hành & Chuyển Đổi", "Giá Trị"],
-        ["Tổng Doanh Thu (GMV)", f"{format_num(kpis.get('total_revenue', 0))} đ", "Tổng Lượng Đơn Đặt Hàng", f"{format_num(kpis.get('total_orders', 0))} đơn"],
-        ["Thực Thu Ước Tính Sau Hoàn", f"{format_num(kpis.get('net_realized_revenue', 0))} đ", "Đơn Hoàn Trả & Tỷ Lệ Hoàn", f"{format_num(kpis.get('total_returned', 0))} đơn ({kpis.get('system_return_rate', 0)}%)"],
-        ["Tổng Chi Phí Quảng Cáo (Ads)", f"{format_num(kpis.get('total_cost', 0))} đ", "Giá Trị Trung Bình Đơn (AOV)", f"{format_num(kpis.get('aov', 0))} đ"],
-        ["Tổng Giá Vốn Hàng Bán (COGS)", f"{format_num(kpis.get('total_cogs', 0))} đ", "Tỷ Suất Doanh Thu/Ads (ROAS)", f"{kpis.get('roas', 0)}x"],
-        ["Lợi Nhuận Ròng (Net Profit)", f"{format_num(kpis.get('net_profit', 0))} đ", "Tỷ Lệ Chuyển Đổi (CR)", f"{kpis.get('system_cr', 0)}%"],
-        ["Biên Lợi Nhuận Ròng (Net Margin)", f"{kpis.get('net_margin_percent', 0)}%", "Tỷ Lệ Chi Phí Ads/Doanh Thu (CIR)", f"{kpis.get('cir_percent', 0)}%"]
-    ]
     for row_idx, row in enumerate(t_kpi.rows):
         is_header = (row_idx == 0)
         for col_idx, cell in enumerate(row.cells):
@@ -261,37 +402,29 @@ def generate_docx_report(state, raw_df=None, cleaned_df=None, processed_df=None)
 
     doc.add_paragraph().paragraph_format.space_after = Pt(12)
 
-    # =========================================================================
-    # PHẦN 4: MA TRẬN 4 GÓC PHẦN TƯ & BẢNG PHÂN BỔ CHI TIẾT
-    # =========================================================================
-    h4 = doc.add_heading(level=1)
-    r = h4.add_run("PHẦN 4: MA TRẬN 4 GÓC PHẦN TƯ & BẢNG ĐÁNH GIÁ KÊNH/CHIẾN DỊCH")
-    r.font.size = Pt(13.5)
-    r.font.bold = True
-    r.font.color.rgb = PRIMARY_COLOR
-
+    # 4.2. BẢNG MA TRẬN 4 GÓC & SCORECARD
     q_counts = step5.get("quadrant_counts") or {}
     q_star = q_counts.get("🌟 Ngôi sao tăng trưởng") or q_counts.get("Star", 0)
     q_cow = q_counts.get("🐄 Bò sữa sinh lời") or q_counts.get("Cash Cow", 0)
     q_trap = q_counts.get("⚠️ Bẫy doanh thu ảo") or q_counts.get("Volume Trap", 0)
     q_burner = q_counts.get("🔥 Đốt tiền / Cần cắt lỗ") or q_counts.get("Cash Burner", 0)
 
+    doc.add_paragraph().add_run("4.2. Phân Bổ Ma Trận 4 Góc Phần Tư:").bold = True
     p_q = doc.add_paragraph()
-    p_q.add_run("4.1. Phân Bổ Quy Mô 4 Nhóm Hoạt Động Doanh Nghiệp:\n").bold = True
     p_q.add_run(
         f"• 🌟 Ngôi sao tăng trưởng: {q_star} đối tượng (Biên lợi nhuận cao & Hiệu suất tăng trưởng mạnh).\n"
         f"• 🐄 Bò sữa sinh lời: {q_cow} đối tượng (Dòng tiền ổn định, lợi nhuận ròng bền vững).\n"
-        f"• ⚠️ Bẫy doanh thu ảo: {q_trap} đối tượng (Doanh thu lớn nhưng tỷ lệ hoàn cao, biên mỏng).\n"
-        f"• 🔥 Đốt tiền / Cần cắt lỗ: {q_burner} đối tượng (Lợi nhuận ròng âm, cần cắt giảm khẩn cấp).\n"
+        f"• ⚠️ Bẫy doanh thu ảo: {q_trap} đối tượng (Doanh thu lớn nhưng chi phí/hoàn cao, biên mỏng).\n"
+        f"• 🔥 Đốt tiền / Cần cắt lỗ: {q_burner} đối tượng (Lợi nhuận ròng âm, cần tối ưu khẩn cấp).\n"
     )
 
     # Bảng chi tiết từng đối tượng / kênh bán
     scorecard = step5.get("scorecard") or []
     if scorecard:
-        doc.add_paragraph().add_run("4.2. Bảng Chấm Điểm & Phân Loại Hiệu Quả Chi Tiết:").bold = True
+        doc.add_paragraph().add_run("4.3. Bảng Chấm Điểm & Phân Loại Hiệu Quả Chi Tiết:").bold = True
         t_sc = doc.add_table(rows=min(len(scorecard), 25) + 1, cols=7)
         t_sc.alignment = WD_TABLE_ALIGNMENT.CENTER
-        sc_headers = ["Đối Tượng / Kênh", "Phân Nhóm Ma Trận", "Doanh Thu", "Chi Phí Ads", "Lợi Nhuận Ròng", "Biên Lợi Nhuận (%)", "Hiệu Quả Ads (ROAS)"]
+        sc_headers = ["Đối Tượng / Kênh", "Phân Nhóm Ma Trận", "Doanh Thu", "Chi Phí Ads", "Lợi Nhuận Ròng", "Biên Lãi (%)", "Hiệu Quả Ads"]
         for col_idx, cell in enumerate(t_sc.rows[0].cells):
             cell.text = sc_headers[col_idx]
             cell.paragraphs[0].runs[0].font.bold = True
