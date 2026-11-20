@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống BI & Quản Trị Kinh Doanh Số 5 Bước (Zero-Data & Schema-Agnostic)</title>
     
-    <!-- CDNs: SheetJS (xlsx), PapaParse, Chart.js & Google Fonts -->
+    <!-- CDNs: SheetJS (xlsx), PapaParse, Chart.js, html2canvas & Google Fonts -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -299,6 +300,58 @@
         .btn-choose-file:hover { background: #f8fafc; border-color: #94a3b8; }
         .file-hidden-input { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
 
+        /* Compact Horizontal Dropzone (Requirement 2) */
+        .compact-dropzone {
+            border: 1.5px dashed var(--border-dashed); border-radius: 12px; padding: 16px 20px;
+            background: #faf9f6; cursor: pointer; transition: all 0.2s; position: relative; width: 100%; box-sizing: border-box;
+            display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 16px;
+            min-height: 96px; max-height: 120px;
+        }
+        .compact-dropzone:hover, .compact-dropzone.dragover { border-color: var(--brand-blue); background: #f0f6ff; }
+        .compact-dropzone-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+        .compact-dropzone-icon {
+            width: 44px; height: 44px; border-radius: 10px; background: #e0edff; color: #2563eb;
+            display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+        }
+        .compact-dropzone-text { display: flex; flex-direction: column; min-width: 0; }
+        .compact-dropzone-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+        .compact-dropzone-sub { font-size: 12px; color: #64748b; }
+        .compact-dropzone-right { flex-shrink: 0; }
+
+        /* 1-Line Compact File Bar (Requirement 2) */
+        .compact-file-bar {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+            background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 10px 18px; margin-bottom: 16px;
+        }
+        .compact-file-bar-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex-wrap: wrap; }
+        .compact-file-badge { background: #dbeafe; color: #1e40af; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; }
+        .compact-file-name { font-size: 13.5px; font-weight: 700; color: #0f172a; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .compact-file-meta { font-size: 13px; color: #475569; font-weight: 600; }
+
+        /* Modal Overlay & Box (Requirement 3) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-box {
+            background: #ffffff; border-radius: 16px; width: 100%; max-width: 960px; max-height: 90vh;
+            display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); overflow: hidden;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center; padding: 18px 24px;
+            border-bottom: 1px solid #e2e8f0; background: #f8fafc;
+        }
+        .modal-title { font-size: 16px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+        .modal-close-btn {
+            background: none; border: none; font-size: 24px; color: #64748b; cursor: pointer; padding: 2px 8px; border-radius: 6px; line-height: 1;
+        }
+        .modal-close-btn:hover { background: #e2e8f0; color: #0f172a; }
+        .modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+        .modal-footer {
+            display: flex; justify-content: flex-end; gap: 12px; padding: 14px 24px;
+            border-top: 1px solid #e2e8f0; background: #f8fafc;
+        }
+
         /* Health Check Cards */
         .health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 18px; width: 100%; }
         .health-card { background: #ffffff; border: 1px solid var(--border-card); border-radius: 12px; padding: 16px; min-width: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.02); }
@@ -497,12 +550,7 @@
                 </li>
                 <li id="side-nav-4" class="locked">
                     <a onclick="tryNavigateStep(4)">
-                        <span class="step-badge">4</span> Ánh xạ & Tính chỉ số BI
-                    </a>
-                </li>
-                <li id="side-nav-5" class="locked">
-                    <a onclick="tryNavigateStep(5)">
-                        <span class="step-badge">5</span> Dashboard & Playbook
+                        <span class="step-badge">4</span> Dashboard & Playbook
                     </a>
                 </li>
             </ul>
@@ -519,7 +567,7 @@
         <!-- MAIN CONTENT -->
         <main class="content">
 
-            <!-- STEPPER 5 BƯỚC -->
+            <!-- STEPPER 4 BƯỚC LIỀN MẠCH -->
             <div class="stepper-container">
                 <div class="stepper">
                     <div class="step-item active" id="step-tab-1" onclick="tryNavigateStep(1)">
@@ -553,16 +601,7 @@
                         <div class="step-bubble">4</div>
                         <div class="step-text">
                             <span class="step-subtitle">BƯỚC 4</span>
-                            <span class="step-title">Ánh Xạ & Chỉ Số BI</span>
-                        </div>
-                    </div>
-                    <div class="step-divider" id="step-div-4"></div>
-
-                    <div class="step-item locked" id="step-tab-5" onclick="tryNavigateStep(5)">
-                        <div class="step-bubble">5</div>
-                        <div class="step-text">
-                            <span class="step-subtitle">BƯỚC 5</span>
-                            <span class="step-title">Dashboard & Playbook</span>
+                            <span class="step-title">Dashboard & Báo Cáo</span>
                         </div>
                     </div>
                 </div>
@@ -623,71 +662,70 @@
                     </div>
                 </div>
 
-                <!-- Khu vực hiển thị Hồ sơ Bối cảnh sau khi phân tích -->
-                <div class="panel-box" id="step1-profile-panel" style="display:none;">
-                    <div class="panel-header">
+                <!-- Khu vực hiển thị Hồ sơ Bối cảnh sau khi phân tích (Lưới thẻ tóm tắt trực quan) -->
+                <div class="panel-box" id="step1-profile-panel" style="display:none; padding:22px 24px;">
+                    <div class="panel-header" style="margin-bottom:16px;">
                         <div>
-                            <h3 class="panel-title" style="font-size:20px;">📋 Hồ Sơ Bối Cảnh Doanh Nghiệp (Business Profile Summary)</h3>
-                            <p class="panel-subtitle" id="disp-source-summary"></p>
+                            <h3 class="panel-title" style="font-size:18px;">📋 Tóm Tắt Bối Cảnh Doanh Nghiệp (Context Summary)</h3>
+                            <p class="panel-subtitle" id="disp-source-summary" style="font-size:13px; color:var(--text-muted);"></p>
                         </div>
-                        <button class="btn btn-outline" onclick="toggleManualEditStep1()">✏️ Chỉnh sửa trực tiếp hồ sơ</button>
+                        <button class="btn btn-outline" onclick="toggleManualEditStep1()" style="font-size:12px; padding:6px 14px;">✏️ Chỉnh sửa hồ sơ</button>
                     </div>
 
-                    <div class="profile-card">
-                        <div class="profile-item">
-                            <div class="profile-label">🏢 Tổng Quan Doanh Nghiệp (Ngành nghề, Mô hình, Quy mô)</div>
-                            <div class="profile-value" id="disp-company-overview"></div>
+                    <!-- Lưới thẻ tóm tắt trực quan (Visual Summary Cards - Tối đa 3 thẻ súc tích) -->
+                    <div class="visual-summary-grid" id="visual-summary-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:20px;">
+                        <!-- Thẻ 1: Doanh nghiệp & Mô hình -->
+                        <div class="summary-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                            <div style="font-size:14px; font-weight:800; color:#1e3a8a; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                                <span style="font-size:18px;">🏢</span> Doanh Nghiệp & Mô Hình
+                            </div>
+                            <ul id="card-company-bullets" style="margin:0; padding-left:18px; font-size:13.5px; line-height:1.6; color:#1e293b;"></ul>
                         </div>
-                        <div class="profile-item">
-                            <div class="profile-label">🎯 Mục Tiêu Phân Tích & Câu Hỏi Trọng Tâm</div>
-                            <div class="profile-value" id="disp-primary-goal" style="color:#38bdf8; margin-bottom:6px;"></div>
-                            <ul class="profile-questions" id="disp-key-questions"></ul>
+
+                        <!-- Thẻ 2: Bài toán & Mục tiêu cốt lõi -->
+                        <div class="summary-card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                            <div style="font-size:14px; font-weight:800; color:#0284c7; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                                <span style="font-size:18px;">🎯</span> Bài Toán & Mục Tiêu Cốt Lõi
+                            </div>
+                            <ul id="card-goal-bullets" style="margin:0; padding-left:18px; font-size:13.5px; line-height:1.6; color:#1e293b;"></ul>
                         </div>
-                        <div class="profile-item" style="margin-bottom:0;">
-                            <div class="profile-label">📊 Dữ Liệu & Ràng Buộc Đi Kèm</div>
-                            <div class="profile-value" id="disp-data-constraints" style="font-size:12.5px; color:#94a3b8;"></div>
+
+                        <!-- Thẻ 3: Chỉ số & Ngưỡng lưu ý (Ẩn nếu input không đề cập) -->
+                        <div class="summary-card" id="card-constraints-box" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,0.04); display:none;">
+                            <div style="font-size:14px; font-weight:800; color:#b45309; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                                <span style="font-size:18px;">📌</span> Chỉ Số & Ngưỡng Lưu Ý
+                            </div>
+                            <ul id="card-constraint-bullets" style="margin:0; padding-left:18px; font-size:13.5px; line-height:1.6; color:#1e293b;"></ul>
                         </div>
                     </div>
 
                     <!-- Form chỉnh sửa bổ sung nếu người dùng muốn sửa -->
-                    <div id="step1-manual-edit-box" style="display:none; background:#111218; border:1px solid var(--border-card); border-radius:10px; padding:16px; margin-bottom:16px;">
+                    <div id="step1-manual-edit-box" style="display:none; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:16px;">
                         <div class="form-group">
-                            <label class="form-label">🏢 Tổng quan Doanh nghiệp:</label>
+                            <label class="form-label" style="font-weight:700;">🏢 Tổng quan Doanh nghiệp:</label>
                             <input type="text" id="edit-company-overview" class="form-input">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">🎯 Mục tiêu Phân tích chính:</label>
+                            <label class="form-label" style="font-weight:700;">🎯 Mục tiêu Phân tích chính:</label>
                             <input type="text" id="edit-primary-goal" class="form-input">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">❓ Các câu hỏi trọng tâm (mỗi dòng 1 câu):</label>
+                            <label class="form-label" style="font-weight:700;">❓ Các câu hỏi trọng tâm (mỗi dòng 1 câu):</label>
                             <textarea id="edit-key-questions" class="form-textarea" rows="3"></textarea>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">📊 Dữ liệu & Ràng buộc đi kèm:</label>
+                            <label class="form-label" style="font-weight:700;">📊 Dữ liệu & Ràng buộc đi kèm:</label>
                             <input type="text" id="edit-data-constraints" class="form-input">
                         </div>
                         <button class="btn btn-primary" onclick="saveEditedStep1Profile()">Lưu Bản Cập Nhật Hồ Sơ</button>
                     </div>
 
-                    <!-- TRẠM KIỂM SOÁT BƯỚC 1 -->
-                    <div class="checkpoint-box">
-                        <div class="checkpoint-header">⚠️ [TRẠM KIỂM SOÁT BƯỚC 1]: XÁC NHẬN HỒ SƠ BỐI CẢNH DOANH NGHIỆP</div>
-                        <div class="checkpoint-text">
-                            Tôi đã tiếp nhận và tổng hợp hồ sơ bối cảnh doanh nghiệp của bạn như trên.<br>
-                            👉 Bạn hãy kiểm tra xem thông tin đã chính xác và đủ ý chưa?<br>
-                            - Nếu <strong>ĐÃ ĐÚNG</strong>, vui lòng gõ <code>Xác nhận</code> / <code>Tiếp tục</code> vào ô bên dưới hoặc bấm nút xác nhận để chuyển sang <strong>Bước 2 (Đánh giá chất lượng dữ liệu thô)</strong>.<br>
-                            - Nếu <strong>CẦN CHỈNH SỬA / BỔ SUNG</strong>, hãy bấm nút <em>"Chỉnh sửa trực tiếp hồ sơ"</em> ở trên.
-                        </div>
-                        <div class="checkpoint-actions">
-                            <div class="gate-input-wrap">
-                                <input type="text" id="gate-input-1" class="gate-input" placeholder="Gõ 'Xác nhận' hoặc 'Tiếp tục'..." onkeydown="if(event.key==='Enter') handleGateText(1)">
-                                <button class="btn btn-outline" onclick="handleGateText(1)">Gửi lệnh</button>
-                            </div>
-                            <button class="btn btn-primary" onclick="confirmStep1()">
-                                ✅ Xác nhận & Mở khóa Bước 2 (Nhập dữ liệu thô) →
-                            </button>
-                        </div>
+                    <!-- Nút bấm xác nhận rõ ràng ngay bên dưới -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:16px; border-top:1px solid #e2e8f0;">
+                        <span style="font-size:13px; color:#64748b;">Kiểm tra thông tin tóm tắt và bấm xác nhận để tiếp tục quy trình:</span>
+                        <button class="btn btn-primary" onclick="confirmStep1()" style="font-size:14px; font-weight:700; padding:11px 24px; border-radius:8px; box-shadow:0 4px 12px rgba(37,99,235,0.25);">
+                            ✅ Xác nhận bối cảnh & Mở khóa Bước 2 (Nhập dữ liệu thô) →
+                        </button>
                     </div>
                 </div>
 
@@ -712,15 +750,43 @@
                         <span class="badge yellow-alert" id="step2-health-badge">Chưa tải file dữ liệu</span>
                     </div>
 
-                    <div class="upload-dropzone" id="dropzone">
+                    <!-- Compact Horizontal Dropzone (min-height: 96px; max-height: 120px) -->
+                    <div class="compact-dropzone" id="step2-dropzone">
                         <input type="file" id="file-uploader" class="file-hidden-input" accept=".csv, .xlsx, .xls, .json" onchange="handleDataFileSelected(event)">
-                        <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                        <div class="upload-main-text">Kéo & Thả file dữ liệu (.xlsx, .xls, .csv, .json) vào đây hoặc <span style="color:#2563eb; text-decoration:underline;">chọn file từ máy tính</span></div>
-                        <div class="upload-sub-text">Tự động nhận diện danh sách cột mới hoàn toàn từ dòng tiêu đề đầu tiên (Header Row)</div>
+                        <div class="compact-dropzone-left">
+                            <div class="compact-dropzone-icon">📁</div>
+                            <div class="compact-dropzone-text">
+                                <div class="compact-dropzone-title">Kéo & thả file dữ liệu vào đây hoặc chọn từ máy tính</div>
+                                <div class="compact-dropzone-sub">Hỗ trợ các định dạng <strong>.xlsx</strong>, <strong>.xls</strong>, <strong>.csv</strong>, <strong>.json</strong> • Tự động nhận diện dòng tiêu đề</div>
+                            </div>
+                        </div>
+                        <div class="compact-dropzone-right">
+                            <button type="button" class="btn btn-primary" style="pointer-events:none; font-size:13px; padding:8px 18px; border-radius:8px;">
+                                📂 Chọn file dữ liệu
+                            </button>
+                        </div>
                     </div>
 
-                    <div style="margin-top:14px; display:flex; justify-content:center; gap:10px;">
-                        <button type="button" class="btn btn-outline" onclick="loadSampleStep2Data()" style="font-size:12.5px; padding:8px 20px; border-color:#2563eb; color:#2563eb; background:#f0f6ff;" title="Nạp nhanh bộ dữ liệu kinh doanh 200 đơn hàng thực tế để kiểm tra ngay toàn bộ Bước 2, 3, 4, 5">
+                    <!-- Thanh trạng thái 1 dòng Compact File Bar (Hiện sau khi tải file thành công) -->
+                    <div id="step2-file-bar" class="compact-file-bar" style="display:none;">
+                        <div class="compact-file-bar-left">
+                            <span class="compact-file-badge">✓ ĐÃ NẠP FILE</span>
+                            <span class="compact-file-name" id="step2-bar-filename">data.xlsx</span>
+                            <span class="compact-file-meta" id="step2-bar-meta">• 0 dòng / 0 cột</span>
+                            <div id="step2-bar-sheet-wrap" style="display:none; align-items:center; gap:6px;">
+                                <span style="font-size:12px; color:#64748b; font-weight:600;">Sheet:</span>
+                                <select id="step2-bar-sheet-select" class="clean-select" style="padding:4px 8px; font-size:12px; width:auto;"></select>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <button type="button" class="btn btn-outline" onclick="resetAndChangeFile()" style="font-size:12.5px; padding:6px 14px; border-color:#cbd5e1; color:#334155; font-weight:600;">
+                                🔄 Đổi file khác
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="step2-sample-btn-wrap" style="margin-top:14px; display:flex; justify-content:center; gap:10px;">
+                        <button type="button" class="btn btn-outline" onclick="loadSampleStep2Data()" style="font-size:12.5px; padding:8px 20px; border-color:#2563eb; color:#2563eb; background:#f0f6ff;" title="Nạp nhanh bộ dữ liệu kinh doanh 200 đơn hàng thực tế để kiểm tra ngay toàn bộ quy trình">
                             ⚡ Nạp nhanh Dữ liệu Kinh doanh Mẫu (200 đơn hàng Đa Kênh)
                         </button>
                     </div>
@@ -961,17 +1027,17 @@
                         <div class="checkpoint-header">⚠️ [TRẠM KIỂM SOÁT BƯỚC 3]: XÁC NHẬN TẬP DỮ LIỆU SẠCH</div>
                         <div class="checkpoint-text">
                             Dữ liệu đã được làm sạch và chuẩn hóa. Bạn hãy kiểm tra Bảng đối chiếu thống kê Trước & Sau khi làm sạch.<br>
-                            👉 Gõ <code>Xác nhận</code> hoặc bấm nút bên dưới để khóa tập dữ liệu sạch và chuyển sang <strong>Bước 4 (Ánh xạ cột động & Tính toán chỉ số BI)</strong>.
+                            👉 Gõ <code>Xác nhận</code> hoặc bấm nút bên dưới để chuyển thẳng sang <strong>Bước 4 (Dashboard Quản Trị & Báo Cáo)</strong>.
                         </div>
                         <div class="checkpoint-actions">
                             <div class="gate-input-wrap">
-                                <input type="text" id="gate-input-3" class="gate-input" placeholder="Gõ 'Xác nhận' hoặc 'Tiếp tục'..." onkeydown="if(event.key==='Enter') handleGateText(3)">
+                                <input type="text" id="gate-input-3" class="gate-input" placeholder="Gõ 'Xác nhận' để mở Dashboard..." onkeydown="if(event.key==='Enter') handleGateText(3)">
                                 <button class="btn btn-outline" onclick="handleGateText(3)">Gửi lệnh</button>
                             </div>
                             <div style="display:flex; gap:8px;">
                                 <button class="btn btn-outline" onclick="goToStep(2)">← Quay lại Bước 2</button>
-                                <button class="btn btn-primary" onclick="confirmStep3()">
-                                    ✅ Xác nhận & Mở khóa Bước 4 (Ánh xạ & Tính chỉ số) →
+                                <button class="btn btn-primary" onclick="confirmStep3AndOpenDashboard()">
+                                    ✅ Xác nhận & Xem Dashboard Quản Trị (Bước 4) →
                                 </button>
                             </div>
                         </div>
@@ -980,187 +1046,97 @@
             </div>
 
             <!-- ============================================================= -->
-            <!-- BƯỚC 4: DYNAMIC COLUMN MAPPING, CUSTOM FORMULAS & 4-QUADRANT -->
+            <!-- MODAL: TÙY CHỈNH CỘT DỮ LIỆU & CÔNG THỨC (POPUP TÙY CHỈNH) -->
+            <!-- ============================================================= -->
+            <div id="modal-custom-mapping" class="modal-overlay" style="display:none;">
+                <div class="modal-box">
+                    <div class="modal-header">
+                        <h3 class="modal-title">⚙️ Tùy Chỉnh Cột Dữ Liệu & Công Thức Tính Toán</h3>
+                        <button type="button" class="modal-close-btn" onclick="closeMappingModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p style="font-size:13px; color:#475569; margin-bottom:14px;">Chỉ định lại các cột dùng làm Doanh thu, Chi phí, Đơn hàng, hoặc tạo thêm công thức tính toán mới cho Dashboard:</p>
+                        
+                        <!-- 12 Dynamic Column Mapping Dropdowns -->
+                        <div class="mapping-grid">
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Cột Thời Gian (Date/Time)</span> <span class="mapping-badge badge-date">Date</span></div>
+                                <select id="map-date" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Chiều Phân Tích 1 (Kênh / Nguồn)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
+                                <select id="map-channel" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Chiều Phân Tích 2 (Chiến Dịch / Nhóm)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
+                                <select id="map-campaign" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Chiều Phân Tích 3 (Danh Mục / SP)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
+                                <select id="map-category" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Chiều Phân Tích 4 (Khu Vực / Chi Nhánh)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
+                                <select id="map-region" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Doanh Thu (Revenue / GMV)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                                <select id="map-revenue" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Đơn Giá (Unit Price - Tùy chọn)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                                <select id="map-unit-price" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Số Lượng Đơn (Orders / Quantity)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                                <select id="map-quantity" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Chi Phí Quảng Cáo (Ad Spend / Cost)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                                <select id="map-cost" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Giá Vốn Hàng Bán (COGS)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                                <select id="map-cogs" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Lợi Nhuận Có Sẵn (Profit / Margin)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                                <select id="map-profit" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Lượt Truy Cập (Traffic / Clicks)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                                <select id="map-traffic" class="clean-select"></select>
+                            </div>
+                            <div class="mapping-item">
+                                <div class="mapping-label"><span>Đơn Hoàn / Hủy (Returned Orders)</span> <span class="mapping-badge badge-metric">Metric</span></div>
+                                <select id="map-returned" class="clean-select"></select>
+                            </div>
+                        </div>
+
+                        <!-- Trình tạo Công thức Cột Mới (Custom Formula Builder) -->
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-top:14px;">
+                            <h4 style="font-size:13.5px; font-weight:800; margin-bottom:6px; color:#0f172a;">➕ Tự Tạo Công Thức Cột Mới Trên Giao Diện (Custom Formula Builder)</h4>
+                            <p style="font-size:12px; color:#64748b; margin-bottom:10px;">Bấm vào tên cột bên dưới để chèn vào biểu thức toán học (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>()</code>):</p>
+                            <div id="available-col-chips" style="margin-bottom:10px;"></div>
+                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                                <input type="text" id="custom-col-name" class="form-input" placeholder="Tên cột mới (VD: Lợi_Nhuận_Thuần)" style="width:240px;">
+                                <input type="text" id="custom-col-expr" class="form-input" placeholder="Công thức: VD [Doanh_Thu] - [Chi_Phí] * 1.1" style="flex:1; min-width:260px;">
+                                <button type="button" class="btn btn-outline" onclick="addCustomFormula()">+ Thêm Công Thức</button>
+                            </div>
+                            <div id="active-custom-formulas" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" onclick="closeMappingModal()">Đóng</button>
+                        <button type="button" class="btn btn-primary" onclick="applyMappingFromModal()">💾 Lưu & Cập Nhật Dashboard Ngay</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================= -->
+            <!-- BƯỚC 4: BI DASHBOARD & ACTIONABLE PLAYBOOK -->
             <!-- ============================================================= -->
             <div id="view-step-4" class="step-view">
-                <div class="panel-box">
-                    <div class="panel-header">
-                        <div>
-                            <h2 class="panel-title">⚙️ Bước 4: Ghép Nối Cột Linh Hoạt (Dynamic Mapping) & Tính Toán Unit Economics</h2>
-                            <p class="panel-subtitle">Tự do chỉ định cột nào trong file mới dùng làm Doanh thu, Chi phí, Giá vốn, Số lượng hoặc tự tạo công thức cột mới.</p>
-                        </div>
-                        <button class="btn btn-primary" onclick="runStep4Processing()">
-                            🔄 Áp Dụng Ghép Nối Cột & Tính Lại Chỉ Số
-                        </button>
-                    </div>
-
-                    <!-- 12 Dynamic Column Mapping Dropdowns -->
-                    <div class="mapping-grid">
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Cột Thời Gian (Date/Time)</span> <span class="mapping-badge badge-date">Date</span></div>
-                            <select id="map-date" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Chiều Phân Tích 1 (Kênh / Nguồn)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
-                            <select id="map-channel" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Chiều Phân Tích 2 (Chiến Dịch / Nhóm)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
-                            <select id="map-campaign" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Chiều Phân Tích 3 (Danh Mục / SP)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
-                            <select id="map-category" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Chiều Phân Tích 4 (Khu Vực / Chi Nhánh)</span> <span class="mapping-badge badge-dim">Dimension</span></div>
-                            <select id="map-region" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Doanh Thu (Revenue / GMV)</span> <span class="mapping-badge badge-metric">Metric</span></div>
-                            <select id="map-revenue" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Đơn Giá (Unit Price - Tùy chọn)</span> <span class="mapping-badge badge-metric">Metric</span></div>
-                            <select id="map-unit-price" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Số Lượng Đơn (Orders / Quantity)</span> <span class="mapping-badge badge-metric">Metric</span></div>
-                            <select id="map-quantity" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Chi Phí Quảng Cáo (Ad Spend / Cost)</span> <span class="mapping-badge badge-metric">Metric</span></div>
-                            <select id="map-cost" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Giá Vốn Hàng Bán (COGS)</span> <span class="mapping-badge badge-metric">Metric</span></div>
-                            <select id="map-cogs" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Lợi Nhuận Có Sẵn (Profit / Margin)</span> <span class="mapping-badge badge-metric">Metric</span></div>
-                            <select id="map-profit" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Lượt Truy Cập (Traffic / Clicks)</span> <span class="mapping-badge badge-metric">Metric</span></div>
-                            <select id="map-traffic" class="clean-select"></select>
-                        </div>
-                        <div class="mapping-item">
-                            <div class="mapping-label"><span>Đơn Hoàn / Hủy (Returned Orders)</span> <span class="mapping-badge badge-metric">Metric</span></div>
-                            <select id="map-returned" class="clean-select"></select>
-                        </div>
-                    </div>
-
-                    <!-- Trình tạo Công thức Cột Mới (Custom Formula Builder) -->
-                    <div style="background:#111218; border:1px solid var(--border-card); border-radius:10px; padding:16px; margin-top:12px;">
-                        <h4 style="font-size:13.5px; font-weight:800; margin-bottom:6px; color:#ffffff;">➕ Tự Tạo Công Thức Cột Mới Trên Giao Diện (Custom Formula Builder)</h4>
-                        <p style="font-size:12px; color:#94a3b8; margin-bottom:10px;">Bấm vào tên cột bên dưới để chèn vào biểu thức toán học (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>()</code>). Cột mới tạo có thể dùng ngay cho phân tích hoặc ghép nối:</p>
-                        <div id="available-col-chips" style="margin-bottom:10px;"></div>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <input type="text" id="custom-col-name" class="form-input" placeholder="Tên cột mới (VD: Lợi_Nhuận_Thuần)" style="width:240px;">
-                            <input type="text" id="custom-col-expr" class="form-input" placeholder="Công thức: VD [Doanh_Thu] - [Chi_Phí] * 1.1" style="flex:1; min-width:260px;">
-                            <button class="btn btn-outline" onclick="addCustomFormula()">+ Thêm Công Thức & Tính Toán</button>
-                        </div>
-                        <div id="active-custom-formulas" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;"></div>
-                    </div>
-                </div>
-
-                <!-- 4-Quadrant Activity Matrix Summary -->
-                <div class="panel-box" style="padding:16px 20px;">
-                    <div class="panel-header" style="margin-bottom:12px;">
-                        <h4 style="font-size:14px; font-weight:800;">🎯 Phân Nhóm Ma Trận Hoạt Động 4 Góc Phần Tư (4-Quadrant Activity Matrix)</h4>
-                    </div>
-                    <div class="quadrant-strip">
-                        <div class="quad-card star">
-                            <div>
-                                <div class="quad-title">🌟 Ngôi Sao Tăng Trưởng</div>
-                                <div style="font-size:11px; color:var(--text-muted);">Doanh thu lớn + Biên LN cao</div>
-                            </div>
-                            <div class="quad-count" id="step4-count-star">0</div>
-                        </div>
-                        <div class="quad-card cow">
-                            <div>
-                                <div class="quad-title">🐄 Bò Sữa Sinh Lời</div>
-                                <div style="font-size:11px; color:var(--text-muted);">Hiệu quả cao / Tỷ lệ hoàn thấp</div>
-                            </div>
-                            <div class="quad-count" id="step4-count-cow">0</div>
-                        </div>
-                        <div class="quad-card trap">
-                            <div>
-                                <div class="quad-title">⚠️ Bẫy Doanh Thu Ảo</div>
-                                <div style="font-size:11px; color:var(--text-muted);">Doanh thu cao nhưng rủi ro/hoàn lớn</div>
-                            </div>
-                            <div class="quad-count" id="step4-count-trap">0</div>
-                        </div>
-                        <div class="quad-card burner">
-                            <div>
-                                <div class="quad-title">🔥 Đốt Tiền / Cần Cắt Lỗ</div>
-                                <div style="font-size:11px; color:var(--text-muted);">Lợi nhuận âm hoặc hiệu quả kém</div>
-                            </div>
-                            <div class="quad-count" id="step4-count-burner">0</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Danh sách Công thức & Bảng Processed Data -->
-                <div class="panel-box">
-                    <div class="panel-header">
-                        <h3 class="panel-title">📐 Hệ Thống Chỉ Số Phái Sinh & Bảng Dữ Liệu Đã Tính Toán</h3>
-                    </div>
-                    <div class="formulas-list" id="formulas-container"></div>
-
-                    <!-- Tùy chọn Hiển thị Bảng: Group-by vs Row-level -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin:14px 0 12px; padding:10px 16px; background:rgba(30,41,59,0.03); border:1px solid var(--border-card); border-radius:8px;">
-                        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-                            <span style="font-size:13px; font-weight:700; color:#0f172a;">Chế độ hiển thị:</span>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; font-weight:600;">
-                                <input type="radio" name="step4_view_mode" id="step4-mode-group" value="group" checked onchange="switchStep4ViewMode('group')">
-                                📊 Đánh giá theo Nhóm hoạt động (Group-by)
-                            </label>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; font-weight:600;">
-                                <input type="radio" name="step4_view_mode" id="step4-mode-row" value="row" onchange="switchStep4ViewMode('row')">
-                                📄 Xem chi tiết từng dòng bản ghi (Row-level)
-                            </label>
-                        </div>
-                        <div id="step4-dim-selector-wrap" style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:12.5px; font-weight:600; color:#475569;">Nhóm theo chiều:</span>
-                            <select id="step4-group-dim-select" class="clean-select" style="min-width:180px; font-weight:700;" onchange="changeStep4GroupDim(this.value)"></select>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive" style="width: 100%; max-width: 100%; overflow-x: auto;">
-                        <table class="bi-table">
-                            <thead id="step4-processed-thead"></thead>
-                            <tbody id="step4-processed-tbody"></tbody>
-                        </table>
-                    </div>
-
-                    <!-- TRẠM KIỂM SOÁT BƯỚC 4 -->
-                    <div class="checkpoint-box">
-                        <div class="checkpoint-header">⚠️ [TRẠM KIỂM SOÁT BƯỚC 4]: XÁC NHẬN BỘ CHỈ SỐ UNIT ECONOMICS & MA TRẬN 4 GÓC</div>
-                        <div class="checkpoint-text">
-                            Hệ thống đã tính toán xong bộ chỉ số Unit Economics và phân nhóm Ma trận 4 góc phần tư.<br>
-                            👉 Bạn có muốn điều chỉnh công thức hay ghép nối cột nào không? Nếu đã chuẩn, hãy gõ <code>Xác nhận</code> hoặc bấm nút bên dưới để xuất <strong>Dashboard & Kế hoạch Hành động ở Bước 5</strong>.
-                        </div>
-                        <div class="checkpoint-actions">
-                            <div class="gate-input-wrap">
-                                <input type="text" id="gate-input-4" class="gate-input" placeholder="Gõ 'Xác nhận' để mở khóa Bước 5..." onkeydown="if(event.key==='Enter') handleGateText(4)">
-                                <button class="btn btn-outline" onclick="handleGateText(4)">Gửi lệnh</button>
-                            </div>
-                            <div style="display:flex; gap:8px;">
-                                <button class="btn btn-outline" onclick="goToStep(3)">← Quay lại Bước 3</button>
-                                <button class="btn btn-primary" onclick="confirmStep4()">
-                                    ✅ Xác nhận & Mở khóa Bước 5 (BI Dashboard & Playbook) →
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ============================================================= -->
-            <!-- BƯỚC 5: BI DASHBOARD & ACTIONABLE PLAYBOOK -->
-            <!-- ============================================================= -->
-            <div id="view-step-5" class="step-view">
                 <!-- Khung Nổi Bật Xuất Báo Cáo Quản Trị DOCX -->
                 <div class="panel-box" style="padding:18px 24px; background: linear-gradient(135deg, #f0f7ff 0%, #f5fbf7 100%); border: 1.5px solid #bfdbfe; margin-bottom: 18px; box-shadow: 0 4px 16px rgba(37, 99, 235, 0.08); border-radius: 12px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
@@ -1175,7 +1151,10 @@
                                 </div>
                             </div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <button type="button" onclick="openMappingModal()" class="btn btn-outline" style="font-size:13px; font-weight:700; padding:10px 18px; border-radius:8px; display:inline-flex; align-items:center; gap:6px; cursor:pointer; background:#ffffff; border:1.5px solid #2563eb; color:#2563eb;">
+                                ⚙️ Tùy chỉnh cột dữ liệu
+                            </button>
                             <label style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#334155; cursor:pointer; user-select:none;">
                                 <input type="checkbox" id="auto-download-docx" style="accent-color:#2563eb; width:16px; height:16px;">
                                 <span>Tự động tải về khi kết thúc</span>
@@ -1197,34 +1176,8 @@
                     </div>
                 </div>
 
-                <!-- Executive KPI Cards -->
-                <div class="kpi-row">
-                    <div class="kpi-card">
-                        <div class="kpi-label">Tổng GMV & Thực Thu</div>
-                        <div class="kpi-value" id="kpi-total-revenue">--</div>
-                        <div class="kpi-sub">Thực thu: <strong id="kpi-net-revenue">--</strong></div>
-                    </div>
-                    <div class="kpi-card orange">
-                        <div class="kpi-label">Đơn Hàng & Tỷ Lệ Hoàn</div>
-                        <div class="kpi-value" id="kpi-return-rate">--</div>
-                        <div class="kpi-sub">Hoàn: <span id="kpi-returned-count">--</span> / <span id="kpi-total-orders">--</span> đơn</div>
-                    </div>
-                    <div class="kpi-card blue">
-                        <div class="kpi-label">AOV & Chuyển Đổi (CR%)</div>
-                        <div class="kpi-value" id="kpi-aov">--</div>
-                        <div class="kpi-sub">Tỷ lệ chuyển đổi CR: <strong id="kpi-cr">--</strong></div>
-                    </div>
-                    <div class="kpi-card purple">
-                        <div class="kpi-label">Chi Phí Ads & ROAS</div>
-                        <div class="kpi-value" id="kpi-roas">--</div>
-                        <div class="kpi-sub">Ads: <span id="kpi-total-cost">--</span> | CIR: <span id="kpi-cir">--</span></div>
-                    </div>
-                    <div class="kpi-card red">
-                        <div class="kpi-label">Lợi Nhuận Ròng & Giá Vốn</div>
-                        <div class="kpi-value" id="kpi-net-profit">--</div>
-                        <div class="kpi-sub">Biên ròng: <strong id="kpi-net-margin">--</strong> | COGS: <span id="kpi-total-cogs">--</span></div>
-                    </div>
-                </div>
+                <!-- Executive Adaptive KPI Cards (Requirement 4) -->
+                <div class="kpi-row" id="adaptive-kpi-container"></div>
 
                 <!-- 4-Quadrant Status Strip -->
                 <div class="panel-box" style="padding:16px 20px;">
@@ -1255,7 +1208,7 @@
                 <!-- 4 Biểu Đồ Tương Tác -->
                 <div class="charts-grid">
                     <div class="chart-card">
-                        <div class="panel-header"><h4 class="panel-title">📈 Xu Hướng Doanh Thu, Chi Phí Ads & Lợi Nhuận Ròng</h4></div>
+                        <div class="panel-header"><h4 class="panel-title" id="chart-title-1">📈 Xu Hướng Doanh Thu, Chi Phí Ads & Lợi Nhuận Ròng</h4></div>
                         <div class="chart-container"><canvas id="timeTrendChart"></canvas></div>
                     </div>
                     <div class="chart-card">
@@ -1503,10 +1456,10 @@
             const badge = document.getElementById('nav-unlocked-status');
             if (state.is_clean_slate) {
                 dot.className = 'status-dot';
-                badge.innerText = 'Trắng hoàn toàn (Clean Slate - Bước 1/5)';
+                badge.innerText = 'Trắng hoàn toàn (Clean Slate - Bước 1/4)';
             } else {
                 dot.className = 'status-dot active';
-                badge.innerText = `${state.filename || 'Đang thiết lập bối cảnh'} • Mở khóa Bước ${state.current_unlocked_step}/5`;
+                badge.innerText = `${state.filename || 'Đang thiết lập bối cảnh'} • Mở khóa Bước ${state.current_unlocked_step}/4`;
             }
 
             renderStep1(state.step1);
@@ -1517,9 +1470,17 @@
         }
 
         // =====================================================================
-        // STEP NAVIGATION & GATEKEEPING
+        // STEP NAVIGATION & GATEKEEPING (4-STEP STREAMLINED PIPELINE)
         // =====================================================================
         function tryNavigateStep(step) {
+            // Cho phép bấm trực tiếp vào mục "4. Dashboard & Báo Cáo" ngay khi đã có dữ liệu ở Bước 3
+            if (step === 4) {
+                if (unlockedStep >= 3 || (pipelineData && (pipelineData.step5 || pipelineData.step4 || pipelineData.step3))) {
+                    unlockedStep = Math.max(unlockedStep, 4);
+                    goToStep(4);
+                    return;
+                }
+            }
             if (step > unlockedStep) {
                 const wantUnlock = confirm(`Bước ${step} chưa được mở khóa theo tiến trình tuần tự. Bạn có muốn MỞ KHÓA NHANH để xem và thao tác Bước ${step} ngay không?`);
                 if (wantUnlock) {
@@ -1533,22 +1494,37 @@
 
         function goToStep(step) {
             currentStep = step;
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 4; i++) {
                 const view = document.getElementById(`view-step-${i}`);
                 if (view) view.classList.toggle('active', i === step);
             }
             updateStepperUI();
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            const mainEl = document.querySelector('main.content');
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+            const mainEl = document.querySelector('main.content') || document.querySelector('.main-content');
             if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
 
-            if (step === 5 && pipelineData && pipelineData.step5 && pipelineData.step5.has_dashboard) {
-                setTimeout(renderStep5Charts, 100);
+            if (step === 4) {
+                if (pipelineData && pipelineData.step5 && pipelineData.step5.has_dashboard) {
+                    setTimeout(renderStep5Charts, 100);
+                } else {
+                    // Nếu chưa khởi tạo dashboard Bước 4, gọi xác nhận ngầm
+                    fetch('/api/step3-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.status === 'success') {
+                                pipelineData = res.data;
+                                renderAllSteps(pipelineData);
+                                setTimeout(renderStep5Charts, 100);
+                            }
+                        }).catch(e => console.warn(e));
+                }
             }
         }
 
         function updateStepperUI() {
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 4; i++) {
                 const tab = document.getElementById(`step-tab-${i}`);
                 const div = document.getElementById(`step-div-${i}`);
                 const side = document.getElementById(`side-nav-${i}`);
@@ -1583,8 +1559,7 @@
                 inp.value = '';
                 if (stepNum === 1) confirmStep1();
                 else if (stepNum === 2) confirmStep2();
-                else if (stepNum === 3) confirmStep3();
-                else if (stepNum === 4) confirmStep4();
+                else if (stepNum === 3) confirmStep3AndOpenDashboard();
             } else {
                 alert("Để qua Trạm kiểm soát, vui lòng gõ 'Xác nhận' hoặc 'Tiếp tục', hoặc bấm vào nút Xác nhận.");
             }
@@ -1683,21 +1658,49 @@
             if (emptyBanner) emptyBanner.style.display = 'none';
 
             const prof = step1.business_profile;
-            document.getElementById('disp-source-summary').innerText = prof.source_summary || '';
-            document.getElementById('disp-company-overview').innerText = prof.company_overview || '';
-            document.getElementById('disp-primary-goal').innerText = prof.primary_goal || '';
-            document.getElementById('disp-data-constraints').innerText = prof.data_constraints || '';
+            const srcSummary = document.getElementById('disp-source-summary');
+            if (srcSummary) srcSummary.innerText = prof.source_summary || '';
 
-            const qList = document.getElementById('disp-key-questions');
-            if (qList) {
-                qList.innerHTML = (prof.key_questions || []).map(q => `<li>${q}</li>`).join('');
+            // Visual Summary Card 1: Doanh nghiệp & Mô hình
+            const compList = document.getElementById('card-company-bullets');
+            if (compList) {
+                const cBullets = (prof.company_bullets && prof.company_bullets.length > 0)
+                    ? prof.company_bullets
+                    : [prof.company_overview || 'Doanh nghiệp kinh doanh bán lẻ số đa kênh'];
+                compList.innerHTML = cBullets.map(b => `<li>${b.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</li>`).join('');
             }
 
-            // Điền vào khung chỉnh sửa
-            document.getElementById('edit-company-overview').value = prof.company_overview || '';
-            document.getElementById('edit-primary-goal').value = prof.primary_goal || '';
-            document.getElementById('edit-key-questions').value = (prof.key_questions || []).join('\n');
-            document.getElementById('edit-data-constraints').value = prof.data_constraints || '';
+            // Visual Summary Card 2: Bài toán & Mục tiêu cốt lõi
+            const goalList = document.getElementById('card-goal-bullets');
+            if (goalList) {
+                const gBullets = (prof.goal_bullets && prof.goal_bullets.length > 0)
+                    ? prof.goal_bullets
+                    : [prof.primary_goal || 'Tối ưu hiệu quả tài chính & quản trị unit economics'];
+                goalList.innerHTML = gBullets.map(b => `<li>${b.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</li>`).join('');
+            }
+
+            // Visual Summary Card 3: Chỉ số & Ngưỡng lưu ý (Chỉ hiển thị nếu input có đề cập)
+            const constBox = document.getElementById('card-constraints-box');
+            const constList = document.getElementById('card-constraint-bullets');
+            const hasConstraints = step1.has_constraints || (prof.constraint_bullets && prof.constraint_bullets.length > 0);
+            if (constBox) {
+                if (hasConstraints && prof.constraint_bullets && prof.constraint_bullets.length > 0) {
+                    constBox.style.display = 'block';
+                    if (constList) {
+                        constList.innerHTML = prof.constraint_bullets.map(b => `<li>${b.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</li>`).join('');
+                    }
+                } else {
+                    constBox.style.display = 'none';
+                }
+            }
+
+            // Điền vào khung chỉnh sửa (nếu có)
+            const eComp = document.getElementById('edit-company-overview');
+            if (eComp) eComp.value = prof.company_overview || '';
+            const eGoal = document.getElementById('edit-primary-goal');
+            if (eGoal) eGoal.value = prof.primary_goal || '';
+            const eConst = document.getElementById('edit-data-constraints');
+            if (eConst) eConst.value = prof.data_constraints || '';
         }
 
         function toggleManualEditStep1() {
@@ -1748,7 +1751,7 @@
         // =====================================================================
         function setupDragAndDrop() {
             // Dropzone Bước 2 (Dữ liệu bảng)
-            const dropzone = document.getElementById('dropzone');
+            const dropzone = document.getElementById('step2-dropzone') || document.getElementById('dropzone');
             if (dropzone) {
                 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => {
                     dropzone.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
@@ -1890,20 +1893,46 @@
             }
         }
 
+        function resetAndChangeFile() {
+            const dropzone = document.getElementById('step2-dropzone') || document.getElementById('dropzone');
+            const fileBar = document.getElementById('step2-file-bar');
+            const sampleBtnWrap = document.getElementById('step2-sample-btn-wrap');
+            if (dropzone) dropzone.style.display = 'flex';
+            if (fileBar) fileBar.style.display = 'none';
+            if (sampleBtnWrap) sampleBtnWrap.style.display = 'flex';
+            const uploader = document.getElementById('file-uploader');
+            if (uploader) uploader.value = '';
+        }
+
         function renderStep2(step2, filename) {
             const container = document.getElementById('step2-results-container');
             const emptyBanner = document.getElementById('step2-empty-banner');
             const healthBadge = document.getElementById('step2-health-badge');
+            const dropzone = document.getElementById('step2-dropzone') || document.getElementById('dropzone');
+            const fileBar = document.getElementById('step2-file-bar');
+            const sampleBtnWrap = document.getElementById('step2-sample-btn-wrap');
 
             if (!step2 || !step2.has_data) {
                 if (container) container.style.display = 'none';
                 if (emptyBanner) emptyBanner.style.display = 'block';
+                if (dropzone) dropzone.style.display = 'flex';
+                if (fileBar) fileBar.style.display = 'none';
+                if (sampleBtnWrap) sampleBtnWrap.style.display = 'flex';
                 if (healthBadge) {
                     healthBadge.innerText = 'Chưa tải file dữ liệu';
                     healthBadge.className = 'badge yellow-alert';
                 }
                 return;
             }
+
+            // Thu gọn dropzone và hiển thị thanh trạng thái 1 dòng (Compact File Bar)
+            if (dropzone) dropzone.style.display = 'none';
+            if (sampleBtnWrap) sampleBtnWrap.style.display = 'none';
+            if (fileBar) fileBar.style.display = 'flex';
+            const barName = document.getElementById('step2-bar-filename');
+            if (barName) barName.innerText = filename || 'du_lieu_kinh_doanh.xlsx';
+            const barMeta = document.getElementById('step2-bar-meta');
+            if (barMeta) barMeta.innerText = `• ${formatNum(step2.total_rows)} dòng / ${formatNum(step2.total_cols)} cột`;
 
             if (container) container.style.display = 'block';
             if (emptyBanner) emptyBanner.style.display = 'none';
@@ -2023,17 +2052,50 @@
             }
         }
 
-        async function confirmStep3() {
-            const res = await fetch('/api/step3-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-            const result = await res.json();
-            if (result.status === 'success') {
-                pipelineData = result.data;
-                unlockedStep = pipelineData.current_unlocked_step;
-                renderAllSteps(pipelineData);
-                goToStep(4);
-            } else {
-                alert(result.message);
+        async function confirmStep3AndOpenDashboard() {
+            try {
+                const res = await fetch('/api/step3-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    pipelineData = result.data;
+                    unlockedStep = Math.max(unlockedStep, 4);
+                    renderAllSteps(pipelineData);
+                    goToStep(4);
+                    setTimeout(renderStep5Charts, 120);
+                } else {
+                    alert(result.message || "Lỗi xác nhận Bước 3.");
+                }
+            } catch (e) {
+                console.error("Lỗi xác nhận Bước 3:", e);
             }
+        }
+
+        async function confirmStep3() {
+            return confirmStep3AndOpenDashboard();
+        }
+
+        function openMappingModal() {
+            const m = document.getElementById('modal-custom-mapping');
+            if (m) m.style.display = 'flex';
+        }
+
+        function closeMappingModal() {
+            const m = document.getElementById('modal-custom-mapping');
+            if (m) m.style.display = 'none';
+        }
+
+        async function applyMappingFromModal() {
+            await runStep4Processing();
+            closeMappingModal();
+            fetch('/api/step4-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        pipelineData = res.data;
+                        renderAllSteps(pipelineData);
+                        setTimeout(renderStep5Charts, 120);
+                    }
+                }).catch(e => console.warn(e));
         }
 
         // =====================================================================
@@ -2054,7 +2116,11 @@
         }
 
         function renderStep4(step4) {
-            if (!step4 || !step4.has_processed) return;
+            if (!step4) return;
+            step4.has_processed = true;
+            if (pipelineData && pipelineData.step4) {
+                pipelineData.step4.has_processed = true;
+            }
             currentStep4Data = step4;
 
             const mapping = step4.mapping_used || {};
@@ -2094,93 +2160,10 @@
             }
 
             renderActiveCustomFormulas();
-
-            const qc = step4.quadrant_counts || {};
-            document.getElementById('step4-count-star').innerText = qc['🌟 Ngôi sao tăng trưởng'] || qc['Star'] || 0;
-            document.getElementById('step4-count-cow').innerText = qc['🐄 Bò sữa sinh lời'] || qc['Cash Cow'] || 0;
-            document.getElementById('step4-count-trap').innerText = qc['⚠️ Bẫy doanh thu ảo'] || qc['Volume Trap'] || 0;
-            document.getElementById('step4-count-burner').innerText = qc['🔥 Đốt tiền / Cần cắt lỗ'] || qc['Cash Burner'] || 0;
-
-            document.getElementById('formulas-container').innerHTML = (step4.feature_formulas || []).map(f => `
-                <div class="formula-card">
-                    <div class="formula-name">${f.name}</div>
-                    <div class="formula-code">${f.formula}</div>
-                    <div class="formula-desc">${f.desc}</div>
-                </div>
-            `).join('');
-
-            // Cập nhật bộ chọn chiều phân tích cho chế độ Group-by
-            const summaries = step4.grouped_summaries || {};
-            const availableDims = (step4.available_dimensions && step4.available_dimensions.length > 0)
-                ? step4.available_dimensions
-                : Object.keys(summaries);
-
-            const dimSelect = document.getElementById('step4-group-dim-select');
-            if (dimSelect) {
-                if (availableDims.length > 0) {
-                    dimSelect.innerHTML = availableDims.map(d => `<option value="${d}">${d}</option>`).join('');
-                    if (!step4ActiveDim || !availableDims.includes(step4ActiveDim)) {
-                        step4ActiveDim = availableDims[0];
-                    }
-                    dimSelect.value = step4ActiveDim;
-                } else {
-                    dimSelect.innerHTML = `<option value="">(Không có cột phân nhóm)</option>`;
-                    step4ActiveMode = 'row';
-                    const rRow = document.getElementById('step4-mode-row');
-                    if (rRow) rRow.checked = true;
-                }
-            }
-
-            renderStep4Table();
         }
 
         function renderStep4Table() {
-            if (!currentStep4Data) return;
-            const summaries = currentStep4Data.grouped_summaries || {};
-            const hasGroupData = step4ActiveDim && summaries[step4ActiveDim] && summaries[step4ActiveDim].rows && summaries[step4ActiveDim].rows.length > 0;
-            const dimWrap = document.getElementById('step4-dim-selector-wrap');
-
-            let cols = [];
-            let rows = [];
-
-            if (step4ActiveMode === 'group' && hasGroupData) {
-                if (dimWrap) dimWrap.style.display = 'flex';
-                cols = summaries[step4ActiveDim].columns || [];
-                rows = summaries[step4ActiveDim].rows || [];
-            } else {
-                if (dimWrap) dimWrap.style.display = (step4ActiveMode === 'group') ? 'flex' : 'none';
-                cols = currentStep4Data.preview_columns || [];
-                rows = currentStep4Data.preview_rows || [];
-            }
-
-            const thead = document.getElementById('step4-processed-thead');
-            const tbody = document.getElementById('step4-processed-tbody');
-            if (thead) thead.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
-            if (tbody) {
-                tbody.innerHTML = rows.map(r => `
-                    <tr>${cols.map(c => {
-                        let val = r[c] !== undefined && r[c] !== null ? r[c] : '';
-                        const strVal = String(val);
-                        if (c === 'Phân nhóm Ma trận' || c === 'quadrant') {
-                            const qClass = strVal.includes('Ngôi sao') || strVal === 'Star' ? 'star' :
-                                (strVal.includes('Bò sữa') || strVal === 'Cash Cow' ? 'cow' :
-                                (strVal.includes('Bẫy') || strVal === 'Volume Trap' ? 'trap' : 'burner'));
-                            val = `<span class="badge ${qClass}">${val}</span>`;
-                        } else if (c === 'Mức cảnh báo' || c === 'alert') {
-                            const aClass = strVal.includes('Nguy hiểm') || strVal === 'RED' ? 'red-alert' :
-                                (strVal.includes('Cảnh báo') || strVal === 'YELLOW' ? 'yellow-alert' : 'green-alert');
-                            val = `<span class="badge ${aClass}">${val}</span>`;
-                        } else if (typeof val === 'number') {
-                            if (c.includes('(%)') || c.includes('CIR') || c.includes('CR')) {
-                                val = `${formatNum(val)}%`;
-                            } else {
-                                val = formatNum(val);
-                            }
-                        }
-                        return `<td>${val}</td>`;
-                    }).join('')}</tr>
-                `).join('');
-            }
+            // Đã chuyển thành Modal - không cần render bảng riêng ở Bước 4 cũ
         }
 
         function insertColToFormula(colName) {
@@ -2251,51 +2234,171 @@
         }
 
         async function confirmStep4() {
-            const res = await fetch('/api/step4-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-            const result = await res.json();
-            if (result.status === 'success') {
-                pipelineData = result.data;
-                unlockedStep = 5;
-                renderAllSteps(pipelineData);
-                goToStep(5);
-            } else {
-                alert(result.message);
+            try {
+                // Tự động kích hoạt tính toán nếu chưa có dữ liệu hoàn tất
+                if (!currentStep4Data || !currentStep4Data.has_processed) {
+                    await runStep4Processing();
+                }
+
+                const res = await fetch('/api/step4-confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '{}'
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    pipelineData = result.data;
+                    unlockedStep = Math.max(unlockedStep, 5);
+                    renderAllSteps(pipelineData);
+                    goToStep(5);
+                    return;
+                }
+            } catch (err) {
+                console.warn("confirmStep4 error, falling back to unlock Step 5:", err);
             }
+
+            // Luôn mở khóa Bước 5 và chuyển sang màn hình Bước 5 mượt mà không dùng alert chặn
+            unlockedStep = Math.max(unlockedStep, 5);
+            updateStepperUI();
+            goToStep(5);
         }
 
         // =====================================================================
-        // BƯỚC 5: INTERACTIVE DASHBOARD, SCORECARD & PLAYBOOK
+        // BƯỚC 4: INTERACTIVE DASHBOARD, SCORECARD & PLAYBOOK (ADAPTIVE)
         // =====================================================================
+        function renderAdaptiveKPIs(step5) {
+            const container = document.getElementById('adaptive-kpi-container');
+            if (!container) return;
+            const kpis = step5.kpis || {};
+            const scenario = step5.scenario || 'A';
+            let cardsHtml = '';
+
+            const formatMoney = (v) => formatNum(v) + ' đ';
+
+            if (scenario === 'A') {
+                // Kịch bản A: TMĐT / Digital Marketing (Có Ads, Hoàn, Traffic)
+                cardsHtml = `
+                    <div class="kpi-card">
+                        <div class="kpi-label">Doanh Thu Thực Thu</div>
+                        <div class="kpi-value">${formatMoney(kpis.net_realized_revenue || kpis.total_revenue)}</div>
+                        <div class="kpi-sub">Tổng GMV: <strong>${formatMoney(kpis.total_revenue)}</strong></div>
+                    </div>
+                    <div class="kpi-card orange">
+                        <div class="kpi-label">Tỷ Lệ Hoàn Đơn</div>
+                        <div class="kpi-value">${kpis.system_return_rate || 0}%</div>
+                        <div class="kpi-sub">Hoàn: ${formatNum(kpis.total_returned)} / ${formatNum(kpis.total_orders)} đơn</div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="kpi-label">Giá Trị TB Đơn (AOV)</div>
+                        <div class="kpi-value">${formatMoney(kpis.aov)}</div>
+                        <div class="kpi-sub">${kpis.total_traffic > 0 ? `Chuyển đổi CR: <strong>${kpis.system_cr}%</strong>` : `Tổng đơn: <strong>${formatNum(kpis.total_orders)}</strong>`}</div>
+                    </div>
+                    <div class="kpi-card purple">
+                        <div class="kpi-label">Hiệu Quả Ads (ROAS)</div>
+                        <div class="kpi-value">${kpis.roas || 0}x</div>
+                        <div class="kpi-sub">Ads: ${formatMoney(kpis.total_cost)} | CIR: <strong>${kpis.cir_percent}%</strong></div>
+                    </div>
+                    <div class="kpi-card ${kpis.net_profit < 0 ? 'red' : ''}">
+                        <div class="kpi-label">Lợi Nhuận Ròng</div>
+                        <div class="kpi-value" style="${kpis.net_profit < 0 ? 'color:#dc2626;' : 'color:#059669;'}">${formatMoney(kpis.net_profit)}</div>
+                        <div class="kpi-sub">Giá vốn COGS: <strong>${formatMoney(kpis.total_cogs)}</strong></div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Biên Lợi Nhuận Ròng</div>
+                        <div class="kpi-value">${kpis.net_margin_percent || 0}%</div>
+                        <div class="kpi-sub">Tỷ suất LN ròng / Doanh thu</div>
+                    </div>
+                `;
+            } else if (scenario === 'B') {
+                // Kịch bản B: Bán lẻ / Phân phối / F&B (Chỉ có Doanh thu, Chi phí, Số lượng)
+                const grossMargin = kpis.total_revenue > 0 ? ((kpis.gross_profit || kpis.net_profit) / kpis.total_revenue * 100).toFixed(1) : 0;
+                cardsHtml = `
+                    <div class="kpi-card">
+                        <div class="kpi-label">Tổng Doanh Thu</div>
+                        <div class="kpi-value">${formatMoney(kpis.total_revenue)}</div>
+                        <div class="kpi-sub">Doanh thu phát sinh toàn hệ thống</div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="kpi-label">Tổng Đơn Hàng / Lượng Bán</div>
+                        <div class="kpi-value">${formatNum(kpis.total_orders)}</div>
+                        <div class="kpi-sub">Số giao dịch ghi nhận</div>
+                    </div>
+                    <div class="kpi-card orange">
+                        <div class="kpi-label">Giá Trị TB Đơn (AOV)</div>
+                        <div class="kpi-value">${formatMoney(kpis.aov)}</div>
+                        <div class="kpi-sub">Doanh thu bình quân mỗi đơn</div>
+                    </div>
+                    <div class="kpi-card purple">
+                        <div class="kpi-label">Tổng Chi Phí / Giá Vốn</div>
+                        <div class="kpi-value">${formatMoney(kpis.total_cogs || kpis.total_cost)}</div>
+                        <div class="kpi-sub">Chi phí vận hành & nguồn hàng</div>
+                    </div>
+                    <div class="kpi-card ${kpis.gross_profit < 0 ? 'red' : ''}">
+                        <div class="kpi-label">Lợi Nhuận Gộp / Ròng</div>
+                        <div class="kpi-value" style="${kpis.gross_profit < 0 ? 'color:#dc2626;' : 'color:#059669;'}">${formatMoney(kpis.gross_profit || kpis.net_profit)}</div>
+                        <div class="kpi-sub">Lợi nhuận sau giá vốn</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Biên Lợi Nhuận Gộp (%)</div>
+                        <div class="kpi-value">${grossMargin}%</div>
+                        <div class="kpi-sub">Tỷ suất lợi nhuận trên doanh thu</div>
+                    </div>
+                `;
+            } else {
+                // Kịch bản C: Dữ liệu số tổng quát (Chỉ có Giá trị / Số lượng & Danh mục)
+                const avgVal = kpis.total_orders > 0 ? Math.round(kpis.total_revenue / kpis.total_orders) : 0;
+                const uniqueCats = (step5.scorecard || []).length;
+                cardsHtml = `
+                    <div class="kpi-card">
+                        <div class="kpi-label">Tổng Giá Trị (Total Value)</div>
+                        <div class="kpi-value">${formatMoney(kpis.total_revenue)}</div>
+                        <div class="kpi-sub">Tổng giá trị định lượng ghi nhận</div>
+                    </div>
+                    <div class="kpi-card blue">
+                        <div class="kpi-label">Số Lượng Ghi Nhận (Count)</div>
+                        <div class="kpi-value">${formatNum(kpis.total_orders)}</div>
+                        <div class="kpi-sub">Tổng số bản ghi / lượt phát sinh</div>
+                    </div>
+                    <div class="kpi-card orange">
+                        <div class="kpi-label">Giá Trị Trung Bình</div>
+                        <div class="kpi-value">${formatMoney(avgVal)}</div>
+                        <div class="kpi-sub">Bình quân trên mỗi đối tượng</div>
+                    </div>
+                    <div class="kpi-card purple">
+                        <div class="kpi-label">Số Danh Mục Theo Dõi</div>
+                        <div class="kpi-value">${uniqueCats}</div>
+                        <div class="kpi-sub">Phân nhóm đối tượng quản trị</div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = cardsHtml;
+        }
+
         function renderStep5(step5) {
             if (!step5 || !step5.has_dashboard) return;
 
             const kpis = step5.kpis || {};
-            document.getElementById('kpi-total-revenue').innerText = formatNum(kpis.total_revenue);
-            document.getElementById('kpi-net-revenue').innerText = formatNum(kpis.net_realized_revenue);
-            document.getElementById('kpi-return-rate').innerText = `${kpis.system_return_rate || 0}%`;
-            document.getElementById('kpi-returned-count').innerText = formatNum(kpis.total_returned);
-            document.getElementById('kpi-total-orders').innerText = formatNum(kpis.total_orders);
-            document.getElementById('kpi-aov').innerText = formatNum(kpis.aov);
-            document.getElementById('kpi-cr').innerText = `${kpis.system_cr || 0}%`;
-            document.getElementById('kpi-roas').innerText = `${kpis.roas || 0}x`;
-            document.getElementById('kpi-total-cost').innerText = formatNum(kpis.total_cost);
-            document.getElementById('kpi-cir').innerText = `${kpis.cir_percent || 0}%`;
-            document.getElementById('kpi-net-profit').innerText = formatNum(kpis.net_profit);
-            document.getElementById('kpi-net-margin').innerText = `${kpis.net_margin_percent || 0}%`;
-            document.getElementById('kpi-total-cogs').innerText = formatNum(kpis.total_cogs);
+            renderAdaptiveKPIs(step5);
 
             const alertBadge = document.getElementById('system-alert-badge');
             if (alertBadge) {
-                const a = kpis.system_alert || 'GREEN';
-                alertBadge.innerText = a === 'RED' ? '🔴 CẢNH BÁO ĐỎ (NGUY HIỂM)' : (a === 'YELLOW' ? '🟡 CẢNH BÁO VÀNG' : '🟢 HỆ THỐNG TỐI ƯU (XANH)');
-                alertBadge.className = 'badge ' + (a === 'RED' ? 'red-alert' : (a === 'YELLOW' ? 'yellow-alert' : 'green-alert'));
+                const a = String(kpis.system_alert || 'GREEN');
+                const isRed = a === 'RED' || a.includes('Nguy hiểm') || a.includes('🔴');
+                const isYellow = a === 'YELLOW' || a.includes('Cảnh báo') || a.includes('🟡');
+                alertBadge.innerText = isRed ? '🔴 CẢNH BÁO ĐỎ (NGUY HIỂM)' : (isYellow ? '🟡 CẢNH BÁO VÀNG' : '🟢 HỆ THỐNG TỐI ƯU (XANH)');
+                alertBadge.className = 'badge ' + (isRed ? 'red-alert' : (isYellow ? 'yellow-alert' : 'green-alert'));
             }
 
             const qc = step5.quadrant_counts || {};
-            document.getElementById('kpi-count-star').innerText = qc['Star'] || 0;
-            document.getElementById('kpi-count-cow').innerText = qc['Cash Cow'] || 0;
-            document.getElementById('kpi-count-trap').innerText = qc['Volume Trap'] || 0;
-            document.getElementById('kpi-count-burner').innerText = qc['Cash Burner'] || 0;
+            const starEl = document.getElementById('kpi-count-star');
+            if (starEl) starEl.innerText = qc['🌟 Ngôi sao tăng trưởng'] ?? qc['Star'] ?? 0;
+            const cowEl = document.getElementById('kpi-count-cow');
+            if (cowEl) cowEl.innerText = qc['🐄 Bò sữa sinh lời'] ?? qc['Cash Cow'] ?? 0;
+            const trapEl = document.getElementById('kpi-count-trap');
+            if (trapEl) trapEl.innerText = qc['⚠️ Bẫy doanh thu ảo'] ?? qc['Volume Trap'] ?? 0;
+            const burnerEl = document.getElementById('kpi-count-burner');
+            if (burnerEl) burnerEl.innerText = qc['🔥 Đốt tiền / Cần cắt lỗ'] ?? qc['Cash Burner'] ?? 0;
 
             // Tự động tải về Báo cáo Quản trị Word nếu tùy chọn được kích hoạt
             const autoDown = document.getElementById('auto-download-docx');
@@ -2542,22 +2645,46 @@
                 y: { grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748b' } }
             };
 
-            // 1. Line Chart
+            // 1. Chart 1: Line Chart (nếu có Date) HOẶC Horizontal Bar Chart Top 10 (nếu không có Date)
             const ctxTrend = document.getElementById('timeTrendChart');
+            const hasDate = s5.has_date || (s5.time_trend && s5.time_trend.is_date);
+            const chart1Title = document.getElementById('chart-title-1');
+
             if (ctxTrend) {
                 if (chartInstances.trend) chartInstances.trend.destroy();
-                chartInstances.trend = new Chart(ctxTrend, {
-                    type: 'line',
-                    data: {
-                        labels: s5.time_trend.labels || [],
-                        datasets: [
-                            { label: 'Doanh Thu', data: s5.time_trend.revenue || [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 },
-                            { label: 'Chi Phí Ads', data: s5.time_trend.ad_spend || [], borderColor: '#f59e0b', tension: 0.3 },
-                            { label: 'Lợi Nhuận Ròng', data: s5.time_trend.net_profit || [], borderColor: '#2563eb', tension: 0.3 }
-                        ]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, scales: lightScales }
-                });
+                if (hasDate) {
+                    if (chart1Title) chart1Title.innerText = "📈 Xu Hướng Doanh Thu, Chi Phí Ads & Lợi Nhuận Theo Thời Gian";
+                    chartInstances.trend = new Chart(ctxTrend, {
+                        type: 'line',
+                        data: {
+                            labels: s5.time_trend.labels || [],
+                            datasets: [
+                                { label: 'Doanh Thu', data: s5.time_trend.revenue || [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 },
+                                { label: 'Chi Phí Ads', data: s5.time_trend.ad_spend || [], borderColor: '#f59e0b', tension: 0.3 },
+                                { label: 'Lợi Nhuận Ròng', data: s5.time_trend.net_profit || [], borderColor: '#2563eb', tension: 0.3 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, scales: lightScales }
+                    });
+                } else {
+                    if (chart1Title) chart1Title.innerText = "🏆 Top 10 Nhóm Hoạt Động Có Doanh Thu / Giá Trị Cao Nhất";
+                    chartInstances.trend = new Chart(ctxTrend, {
+                        type: 'bar',
+                        data: {
+                            labels: s5.time_trend.labels || [],
+                            datasets: [
+                                { label: 'Doanh Thu', data: s5.time_trend.revenue || [], backgroundColor: '#10b981', borderRadius: 4 },
+                                { label: 'Lợi Nhuận / Giá Trị', data: s5.time_trend.net_profit || [], backgroundColor: '#2563eb', borderRadius: 4 }
+                            ]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: lightScales
+                        }
+                    });
+                }
             }
 
             // 2. Grouped Bar Chart
@@ -2652,12 +2779,78 @@
             window.location.href = `/api/export-clean?format=${fmt || 'csv'}`;
         }
 
-        function exportReportDocx() {
+        async function exportReportDocx() {
             if (!pipelineData || (!pipelineData.step5?.has_dashboard && !pipelineData.step3?.has_cleaned)) {
                 alert("⚠️ Chưa có dữ liệu hoàn chỉnh để xuất báo cáo. Vui lòng hoàn thành phân tích dữ liệu trước!");
                 return;
             }
-            window.location.href = '/api/export-docx';
+
+            const btn = document.querySelector('button[onclick="exportReportDocx()"]');
+            let originalText = "";
+            if (btn) {
+                originalText = btn.innerHTML;
+                btn.innerHTML = '⏳ Đang chụp ảnh & xuất Word...';
+                btn.disabled = true;
+            }
+
+            try {
+                const images = {};
+
+                // 1. Chụp ảnh KPI Summary Cards bằng html2canvas độ nét cao (scale: 2)
+                const kpiEl = document.getElementById('adaptive-kpi-container') || document.querySelector('.kpi-row');
+                if (kpiEl && typeof html2canvas !== 'undefined') {
+                    try {
+                        const canvas = await html2canvas(kpiEl, { scale: 2, backgroundColor: '#ffffff' });
+                        images['kpi'] = canvas.toDataURL('image/png', 1.0);
+                    } catch (err) {
+                        console.warn("Lỗi chụp html2canvas KPI:", err);
+                    }
+                }
+
+                // 2. Trích xuất Base64 4 biểu đồ Chart.js
+                if (chartInstances.trend) {
+                    try { images['trend'] = chartInstances.trend.toBase64Image('image/png', 1.0); } catch (e) {}
+                }
+                if (chartInstances.bar) {
+                    try { images['bar'] = chartInstances.bar.toBase64Image('image/png', 1.0); } catch (e) {}
+                }
+                if (chartInstances.donut) {
+                    try { images['donut'] = chartInstances.donut.toBase64Image('image/png', 1.0); } catch (e) {}
+                }
+                if (chartInstances.scatter) {
+                    try { images['scatter'] = chartInstances.scatter.toBase64Image('image/png', 1.0); } catch (e) {}
+                }
+
+                // 3. Gửi payload ảnh qua POST /api/export-docx
+                const res = await fetch('/api/export-docx', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ images })
+                });
+
+                if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                const now = new Date();
+                const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+                a.download = `Bao_Cao_Quan_Tri_BI_${dateStr}.docx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (err) {
+                console.error("Lỗi xuất DOCX:", err);
+                window.location.href = '/api/export-docx';
+            } finally {
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }
         }
 
         async function sendAIChat() {
